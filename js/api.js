@@ -1,4 +1,4 @@
-// ─── api.js — capa de comunicación con el backend GAS ────────────────────
+// ─── api.js — capa de comunicación con el backend GAS s────────────────────
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwDo2q0hjPNiKp3-3VF1kvEP-8QtubrlJOFYL66NJ6YfmOrduMMyEajcZNAovtJRtjWnA/exec';
 
