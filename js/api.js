@@ -1,6 +1,6 @@
 // ─── api.js — capa de comunicación con el backend GAS ────────────────────
 
-const GAS_URL = 'https://script.google.com/macros/s/REEMPLAZA_CON_TU_URL/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyhV03wdtV1wzPx6dY7eagevFPjSTtmwkysTRrX6ECXINdE1AbPEE9IaSZjNMI1s9kzCQ/exec';
 
 async function gasCall(params) {
   const url = new URL(GAS_URL);
