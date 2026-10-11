@@ -284,7 +284,12 @@ function cargarPeriodos(){
     _participantes=(res&&res.participantes)?res.participantes:['Claush','Cri'];
     renderPeriodos();
   }).catch(function(e){
-    document.getElementById('vistaPeriodos').innerHTML='<div style="padding:40px;text-align:center;color:var(--danger)">⚠️ '+e.message+'</div>';
+    // Si el endpoint no existe en el backend, mostrar período actual vacío
+    if(e.message && e.message.indexOf('not a function')>=0){
+      _periodos=[]; renderPeriodos();
+    } else {
+      document.getElementById('vistaPeriodos').innerHTML='<div style="padding:40px;text-align:center;color:var(--danger)">⚠️ '+e.message+'<br><br><button class="btn" onclick="cargarPeriodos()">Reintentar</button></div>';
+    }
   });
 }
 

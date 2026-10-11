@@ -1,4 +1,4 @@
-// ─── api.js — capa de comunicación con el backend GAS s────────────────────
+// ─── api.js — capa de comunicación con el backend GAS ────────────────────
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwDo2q0hjPNiKp3-3VF1kvEP-8QtubrlJOFYL66NJ6YfmOrduMMyEajcZNAovtJRtjWnA/exec';
 
@@ -23,10 +23,11 @@ async function gasPost(action, body) {
 // ── API pública ────────────────────────────────────────────────────────────
 
 const API = {
-  getDashboard:   (periodo) => gasCall({ action: 'getDashboard', periodo }),
-  getRegistros:   (periodo) => gasCall({ action: 'getRegistros', periodo }),
-  getPresupuesto: (periodo) => gasCall({ action: 'getPresupuesto', periodo }),
-  getConfig:      ()        => gasCall({ action: 'getConfig' }),
+  getDashboard:       (periodo) => gasCall({ action: 'getDashboard', periodo }),
+  getRegistros:       (periodo) => gasCall({ action: 'getRegistros', periodo }),
+  getResumenPeriodos: ()        => gasCall({ action: 'getResumenPeriodos' }),
+  getPresupuesto:     (periodo) => gasCall({ action: 'getPresupuesto', periodo }),
+  getConfig:          ()        => gasCall({ action: 'getConfig' }),
 
   guardarGasto:       (data) => gasPost('guardarGasto', data),
   eliminarGasto:      (id)   => gasPost('eliminarGasto', { id }),

@@ -474,13 +474,27 @@ function spinner(){
   document.getElementById('page').innerHTML='<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span><div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
 }
 function cargar(){
-  API.getResumenPeriodos().then(function(res){
-    _periodos=(res&&res.periodos)?res.periodos.map(function(p){ return p.periodo||p; }):[_periodo];
+  // getResumenPeriodos es opcional — si falla, seguimos con el período actual
+  var resumenPromise = API.getResumenPeriodos().catch(function(){ return null; });
+
+  resumenPromise.then(function(res){
+    if(res && res.periodos && res.periodos.length){
+      _periodos = res.periodos.map(function(p){ return p.periodo||p; });
+    } else {
+      _periodos = [_periodo];
+    }
     if(_periodos.indexOf(_periodo)<0) _periodos.unshift(_periodo);
-    return Promise.all([API.getDashboard(_periodo), API.getDashboard(_compPer)]);
+    if(_compPer && _periodos.indexOf(_compPer)<0) _periodos.push(_compPer);
+
+    // Cargar dashboard actual y de comparación en paralelo
+    var compPromise = _compPer
+      ? API.getDashboard(_compPer).catch(function(){ return null; })
+      : Promise.resolve(null);
+
+    return Promise.all([API.getDashboard(_periodo), compPromise]);
   }).then(function(r){
     _data=r[0]; _dataComp=r[1];
-    if(_data.error){ showToast('Error: '+_data.error,'error'); return; }
+    if(!_data || _data.error){ showToast('Error: '+(_data&&_data.error||'sin datos'),'error'); return; }
     render();
   }).catch(function(e){
     document.getElementById('page').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ '+e.message+'</div>';
