@@ -8,63 +8,148 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="css/styles.css">
   <style>
-    .period-wrap { display:flex; gap:8px; margin-bottom:16px; }
-    .period-wrap select { flex:1; }
-
-    .gasto-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      display: flex; align-items: center; gap: 12px;
-      box-shadow: var(--shadow);
+    /* ── VISTA PERÍODOS ── */
+    .periodo-row {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px;
+      margin-bottom:10px; box-shadow:var(--shadow); cursor:pointer;
+      transition:border-color .15s;
     }
-    .gasto-emoji { font-size: 1.4rem; flex-shrink:0; width:36px; text-align:center; }
-    .gasto-body  { flex:1; min-width:0; }
-    .gasto-titulo { font-size:0.9rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .gasto-meta   { font-size:0.72rem; color:var(--text3); margin-top:2px; }
-    .gasto-right  { text-align:right; flex-shrink:0; }
-    .gasto-monto  { font-family:var(--mono); font-weight:700; font-size:0.9rem; }
-    .gasto-resp   { font-size:0.7rem; color:var(--text3); margin-top:2px; }
-
-    .gasto-actions { display:flex; gap:6px; margin-top:8px; }
+    .periodo-row:hover { border-color:var(--brand); }
+    .periodo-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .periodo-nombre { font-weight:700; font-size:0.95rem; }
+    .periodo-total  { font-family:var(--mono); font-weight:700; font-size:1rem; }
+    .periodo-mid  { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+    .p-pill { font-size:0.72rem; padding:2px 8px; border-radius:10px; font-weight:600; }
+    .p-pill.p1 { background:rgba(99,102,241,.15); color:#818cf8; }
+    .p-pill.p2 { background:rgba(52,211,153,.15);  color:#34d399; }
+    .periodo-bottom { display:flex; gap:6px; justify-content:flex-end; }
+    .periodo-count { font-size:0.72rem; color:var(--text3); flex:1; align-self:center; }
     .btn-sm {
-      padding: 5px 12px; font-size:0.75rem; font-weight:600;
-      border-radius:8px; border:1px solid var(--border);
-      background:var(--bg3); color:var(--text2); cursor:pointer;
-      transition: background .12s, color .12s;
+      font-size:0.75rem; padding:5px 10px; border-radius:var(--radius-sm);
+      border:1px solid var(--border); background:var(--bg3); color:var(--text2);
+      cursor:pointer; transition:background .15s;
     }
-    .btn-sm:hover { background:var(--brand); color:#fff; border-color:var(--brand); }
-    .btn-sm.danger:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
+    .btn-sm:hover { background:var(--bg2); }
+    .btn-sm.danger { border-color:rgba(239,68,68,.4); color:var(--danger); }
+    .btn-sm.danger:hover { background:rgba(239,68,68,.1); }
+    .btn-sm.accent { border-color:var(--brand); color:var(--brand); }
+    .btn-sm.accent:hover { background:rgba(99,102,241,.1); }
 
-    .resumen-strip {
-      display:flex; gap:8px; margin-bottom:12px;
+    /* ── VISTA DETALLE ── */
+    .back-btn {
+      display:flex; align-items:center; gap:6px; font-size:0.82rem; font-weight:600;
+      color:var(--text3); padding:8px 0 10px; cursor:pointer; border:none; background:none;
+      transition:color .15s;
     }
-    .resumen-kpi {
-      flex:1; background:var(--bg2); border:1px solid var(--border);
-      border-radius:var(--radius); padding:10px 12px; text-align:center;
-      box-shadow:var(--shadow);
+    .back-btn:hover { color:var(--brand); }
+    .detalle-titulo { font-size:1.1rem; font-weight:800; margin-bottom:12px; }
+
+    .stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+    .stat-card {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px; text-align:center;
     }
-    .resumen-kpi .val { font-family:var(--mono); font-weight:700; font-size:1rem; }
-    .resumen-kpi .lbl { font-size:0.68rem; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+    .stat-lbl { font-size:0.65rem; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+    .stat-val { font-family:var(--mono); font-weight:700; font-size:0.9rem; }
+    .stat-pct { font-size:0.68rem; color:var(--text3); margin-top:2px; }
 
-    .empty-state { text-align:center; padding:48px 0; color:var(--text3); font-size:0.85rem; }
+    .deuda-mini {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 12px;
+      margin-bottom:12px; font-size:0.78rem;
+      display:flex; align-items:center; gap:8px;
+    }
+    .deuda-mini .dm-lbl { color:var(--text3); flex:1; }
+    .deuda-mini .dm-val { font-family:var(--mono); font-weight:700; }
 
-    /* Modal edición */
+    /* Filtro categorías */
+    .chips-wrap {
+      display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;
+      margin-bottom:12px; scrollbar-width:none;
+    }
+    .chips-wrap::-webkit-scrollbar { display:none; }
+    .chip {
+      white-space:nowrap; padding:5px 12px; border-radius:20px; font-size:0.75rem;
+      border:1px solid var(--border); background:var(--bg3); color:var(--text2);
+      cursor:pointer; transition:all .15s; flex-shrink:0;
+    }
+    .chip.active { background:var(--brand); border-color:var(--brand); color:#fff; }
+
+    /* Grilla gastos */
+    .gt-row {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 12px;
+      display:flex; align-items:flex-start; gap:10px;
+      margin-bottom:8px;
+    }
+    .gt-emoji { font-size:1.2rem; flex-shrink:0; margin-top:2px; }
+    .gt-info  { flex:1; min-width:0; }
+    .gt-titulo { font-weight:600; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .gt-meta  { display:flex; gap:5px; flex-wrap:wrap; margin-top:4px; }
+    .gt-badge {
+      font-size:0.65rem; padding:1px 6px; border-radius:8px;
+      background:var(--bg3); color:var(--text3);
+    }
+    .gt-right { text-align:right; flex-shrink:0; }
+    .gt-monto { font-family:var(--mono); font-weight:700; font-size:0.9rem; }
+    .gt-actions { display:flex; gap:4px; margin-top:5px; justify-content:flex-end; }
+    .gt-btn {
+      font-size:0.65rem; padding:2px 7px; border-radius:6px;
+      border:1px solid var(--border); background:var(--bg3); color:var(--text2); cursor:pointer;
+    }
+    .gt-btn.del { border-color:rgba(239,68,68,.4); color:var(--danger); }
+    .gt-btn.del:hover { background:rgba(239,68,68,.1); }
+
+    /* ── MODALS ── */
     .modal-overlay {
-      position:fixed; inset:0; background:rgba(0,0,0,.5);
-      z-index:300; display:flex; align-items:flex-end; justify-content:center;
-      opacity:0; pointer-events:none; transition:opacity .2s;
+      position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:200;
+      display:none; align-items:flex-end; justify-content:center;
     }
-    .modal-overlay.open { opacity:1; pointer-events:all; }
-    .modal-box {
-      background:var(--bg2); border-radius:20px 20px 0 0;
-      padding:24px 20px 32px; width:100%; max-width:480px;
-      transform:translateY(40px); transition:transform .25s;
+    .modal-overlay.center { align-items:center; }
+    .modal-overlay.open { display:flex; }
+
+    .modal-sheet {
+      background:var(--bg2); border-radius:16px 16px 0 0;
+      padding:20px 16px 32px; width:100%; max-width:480px;
+      max-height:85vh; overflow-y:auto;
+      animation:slideUp .2s ease;
     }
-    .modal-overlay.open .modal-box { transform:translateY(0); }
+    .modal-center-box {
+      background:var(--bg2); border-radius:14px;
+      padding:20px 16px; width:calc(100% - 40px); max-width:360px;
+      animation:fadeIn .15s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:none;opacity:1} }
+    @keyframes fadeIn  { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:none} }
+
     .modal-title { font-size:1rem; font-weight:700; margin-bottom:16px; }
+    .modal-field { margin-bottom:12px; }
+    .modal-field label { display:block; font-size:0.75rem; color:var(--text3); margin-bottom:4px; }
+    .modal-field input,
+    .modal-field select,
+    .modal-field textarea {
+      width:100%; box-sizing:border-box; padding:9px 12px;
+      background:var(--bg3); border:1px solid var(--border);
+      border-radius:var(--radius-sm); color:var(--text1); font-size:0.88rem;
+      font-family:inherit;
+    }
+    .modal-field input:focus,
+    .modal-field select:focus,
+    .modal-field textarea:focus { outline:none; border-color:var(--brand); }
+    .modal-btns { display:flex; gap:8px; margin-top:16px; }
+    .modal-btns .btn { flex:1; margin:0; }
+
+    /* FAB */
+    .fab {
+      position:fixed; bottom:24px; right:20px; z-index:100;
+      width:52px; height:52px; border-radius:50%;
+      background:var(--brand); color:#fff; font-size:1.5rem;
+      border:none; cursor:pointer; box-shadow:0 4px 16px rgba(99,102,241,.5);
+      display:flex; align-items:center; justify-content:center;
+      transition:transform .15s;
+    }
+    .fab:hover { transform:scale(1.08); }
   </style>
 </head>
 <body>
@@ -72,7 +157,7 @@
 <nav class="nav">
   <button class="nav-hamburger" onclick="openDrawer()">☰</button>
   <div class="nav-brand"><span>Cri</span>Count</div>
-  <button class="nav-fab-top" onclick="irA('formulario')" title="Nuevo gasto">＋</button>
+  <div style="width:36px"></div>
 </nav>
 
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
@@ -89,20 +174,81 @@
   <button class="drawer-item" onclick="logout()">🚪 <span>Cerrar sesión</span></button>
 </div>
 
-<div class="page" id="page">
+<!-- Vista períodos -->
+<div class="page" id="vistaPeriodos">
   <div style="text-align:center;padding:60px 0;color:var(--text3)">
     <span class="loader"></span>
-    <div style="margin-top:12px;font-size:0.85rem">Cargando registros...</div>
+    <div style="margin-top:12px;font-size:0.85rem">Cargando períodos...</div>
   </div>
 </div>
 
-<!-- Modal eliminar -->
-<div class="modal-overlay" id="modalEliminar">
-  <div class="modal-box">
-    <div class="modal-title">¿Eliminar este gasto?</div>
-    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:20px" id="modalEliminarDesc"></p>
-    <button class="btn btn-danger" onclick="confirmarEliminar()">Sí, eliminar</button>
-    <button class="btn btn-ghost" onclick="cerrarModal('modalEliminar')">Cancelar</button>
+<!-- Vista detalle -->
+<div class="page" id="vistaDetalle" style="display:none">
+  <div style="text-align:center;padding:60px 0;color:var(--text3)">
+    <span class="loader"></span>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" onclick="abrirNuevo()" style="display:none" title="Nuevo gasto">＋</button>
+
+<!-- Modal nuevo gasto / edición (bottom sheet) -->
+<div class="modal-overlay" id="modalGasto" onclick="cerrarModalGasto(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalGastoTitulo">Nuevo gasto</div>
+    <input type="hidden" id="editId">
+    <div class="modal-field">
+      <label>Título</label>
+      <input type="text" id="mgTitulo" placeholder="Descripción del gasto">
+    </div>
+    <div class="modal-field">
+      <label>Monto</label>
+      <input type="number" id="mgMonto" placeholder="0" inputmode="numeric" min="0">
+    </div>
+    <div class="modal-field">
+      <label>Fecha</label>
+      <input type="date" id="mgFecha">
+    </div>
+    <div class="modal-field">
+      <label>Categoría</label>
+      <select id="mgCategoria"></select>
+    </div>
+    <div class="modal-field">
+      <label>Quién paga</label>
+      <select id="mgResponsable"></select>
+    </div>
+    <div class="modal-field">
+      <label>División</label>
+      <select id="mgDivision">
+        <option value="mitad">Por mitades</option>
+        <option value="P1">Solo Claush</option>
+        <option value="P2">Solo Cri</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Notas (opcional)</label>
+      <textarea id="mgNotas" rows="2" placeholder="..."></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="cerrarModalGasto()">Cancelar</button>
+      <button class="btn btn-primary" id="mgGuardarBtn" onclick="guardarGasto()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal réplica (centrado) -->
+<div class="modal-overlay center" id="modalReplica" onclick="cerrarModalReplica(event)">
+  <div class="modal-center-box" onclick="event.stopPropagation()">
+    <div class="modal-title">📋 Replicar período</div>
+    <p style="font-size:0.82rem;color:var(--text3);margin-bottom:16px">Se copiará el período <strong id="repOrigenNombre"></strong> al nuevo período indicado.</p>
+    <div class="modal-field">
+      <label>Nuevo período (YYYY-MM)</label>
+      <input type="text" id="repDestino" placeholder="2025-01" maxlength="7">
+    </div>
+    <div class="modal-btns">
+      <button class="btn" onclick="cerrarModalReplica()">Cancelar</button>
+      <button class="btn btn-primary" id="repBtn" onclick="confirmarReplica()">✅ Replicar</button>
+    </div>
   </div>
 </div>
 
@@ -114,137 +260,355 @@
 <script>
 requireAuth();
 
-var _periodo = '';
-var _gastos  = [];
-var _cats    = [];
-var _idEliminar = null;
+var _periodos     = [];
+var _participantes= ['Claush','Cri'];
+var _categorias   = [];
+var _periodoActual= '';
+var _gastos       = [];
+var _filtroCateg  = 'todos';
+var _vistaActual  = 'periodos';
+var _repOrigen    = '';
 
-function openDrawer() {
-  document.getElementById('drawerOverlay').classList.add('open');
-  document.getElementById('drawerPanel').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeDrawer() {
-  document.getElementById('drawerOverlay').classList.remove('open');
-  document.getElementById('drawerPanel').classList.remove('open');
-  document.body.style.overflow = '';
-}
-function cerrarModal(id) {
-  document.getElementById(id).classList.remove('open');
-  document.body.style.overflow = '';
-}
+/* ── HELPERS ── */
+function clp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
+function pct(v,t){ return t>0?Math.round(v/t*100):0; }
 
-function clp(n) { return '$' + Math.round(n||0).toLocaleString('es-CL'); }
-function emojiCat(nombre) {
-  var c = _cats.find(function(x){ return x.nombre === nombre; });
-  return c ? c.emoji : '📌';
-}
-function periodoLabel(p) {
-  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var parts = p.split('-');
-  return meses[parseInt(parts[1])-1] + ' ' + parts[0];
-}
+/* ── DRAWER ── */
+function openDrawer(){ document.getElementById('drawerOverlay').classList.add('open'); document.getElementById('drawerPanel').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeDrawer(){ document.getElementById('drawerOverlay').classList.remove('open'); document.getElementById('drawerPanel').classList.remove('open'); document.body.style.overflow=''; }
 
-function render(d) {
-  _gastos = d.gastos || [];
-  _cats   = d.categorias || [];
-
-  var periodos = (d.periodos && d.periodos.length) ? d.periodos : [_periodo];
-  var opts = periodos.map(function(p){
-    return '<option value="'+p+'"'+(p===_periodo?' selected':'')+'>'+periodoLabel(p)+'</option>';
-  }).join('');
-
-  var html = '<div class="period-wrap animate">'
-    + '<select onchange="cambiarPeriodo(this.value)">'+opts+'</select>'
-    + '</div>';
-
-  // Resumen
-  html += '<div class="resumen-strip animate delay-1">'
-    + '<div class="resumen-kpi"><div class="val">'+clp(d.total)+'</div><div class="lbl">Total</div></div>'
-    + '<div class="resumen-kpi"><div class="val">'+clp(d.totalP1)+'</div><div class="lbl">'+(d.participantes&&d.participantes[0]||'P1')+'</div></div>'
-    + '<div class="resumen-kpi"><div class="val">'+clp(d.totalP2)+'</div><div class="lbl">'+(d.participantes&&d.participantes[1]||'P2')+'</div></div>'
-    + '</div>';
-
-  if (!_gastos.length) {
-    html += '<div class="empty-state">📭 Sin gastos en este período</div>';
-  } else {
-    // Ordenar por fecha desc
-    var lista = _gastos.slice().reverse();
-    lista.forEach(function(g, i) {
-      var emoji = emojiCat(g.categoria);
-      html += '<div class="gasto-card animate" style="animation-delay:'+(i*0.03)+'s">'
-        + '<div class="gasto-emoji">'+emoji+'</div>'
-        + '<div class="gasto-body">'
-        + '<div class="gasto-titulo">'+g.titulo+'</div>'
-        + '<div class="gasto-meta">'+g.fecha+' · '+g.categoria+'</div>'
-        + '<div class="gasto-actions">'
-        + '<button class="btn-sm danger" onclick="pedirEliminar(\''+g.id+'\',\''+g.titulo.replace(/'/g,"\\'")+'\')" >Eliminar</button>'
-        + '</div>'
-        + '</div>'
-        + '<div class="gasto-right">'
-        + '<div class="gasto-monto">'+clp(g.monto)+'</div>'
-        + '<div class="gasto-resp">'+g.responsable+'</div>'
-        + '</div>'
-        + '</div>';
-    });
-  }
-
-  document.getElementById('page').innerHTML = html;
-}
-
-function cambiarPeriodo(p) {
-  _periodo = p;
-  document.getElementById('page').innerHTML =
-    '<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span>'
-    +'<div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
-  cargar(p);
-}
-
-function pedirEliminar(id, titulo) {
-  _idEliminar = id;
-  document.getElementById('modalEliminarDesc').textContent = '"' + titulo + '"';
-  document.getElementById('modalEliminar').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function confirmarEliminar() {
-  if (!_idEliminar) return;
-  API.eliminarGasto(_idEliminar)
-    .then(function(r) {
-      cerrarModal('modalEliminar');
-      if (r.ok) {
-        showToast('Gasto eliminado', 'success');
-        cargar(_periodo);
-      } else {
-        showToast('Error: ' + r.error, 'error');
-      }
-    })
-    .catch(function(e) { showToast('Error: ' + e.message, 'error'); });
-}
-
-function cargar(periodo) {
-  // Primero cargamos los gastos del período
-  Promise.all([
-    API.getRegistros(periodo),
-    API.getResumenPeriodos ? API.getResumenPeriodos() : Promise.resolve(null)
-  ])
-  .then(function(results) {
-    var d = results[0];
-    if (d.error) { showToast('Error: ' + d.error, 'error'); return; }
-    // Si el resumen tiene periodos, los usamos para el selector
-    if (results[1] && results[1].periodos) {
-      d.periodos = results[1].periodos.map(function(p){ return p.periodo; });
-    }
-    render(d);
-  })
-  .catch(function(err) {
-    document.getElementById('page').innerHTML =
-      '<div style="text-align:center;padding:40px 16px;color:var(--danger)">⚠️ '+err.message+'</div>';
+/* ── VISTA PERÍODOS ── */
+function cargarPeriodos(){
+  API.getResumenPeriodos().then(function(res){
+    _periodos=(res&&res.periodos)?res.periodos:[];
+    _participantes=(res&&res.participantes)?res.participantes:['Claush','Cri'];
+    renderPeriodos();
+  }).catch(function(e){
+    document.getElementById('vistaPeriodos').innerHTML='<div style="padding:40px;text-align:center;color:var(--danger)">⚠️ '+e.message+'</div>';
   });
 }
 
-_periodo = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0');
-cargar(_periodo);
+function periodoLabel(p){
+  var m=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var pt=p.split('-'); return m[parseInt(pt[1])-1]+' '+pt[0];
+}
+
+function renderPeriodos(){
+  var p1=_participantes[0]||'Claush', p2=_participantes[1]||'Cri';
+  var html='<div class="sec-head animate" style="margin-bottom:12px"><h3>📋 Todos los períodos</h3><span class="sec-badge">'+_periodos.length+'</span></div>';
+  if(!_periodos.length){
+    html+='<div style="text-align:center;padding:40px;color:var(--text3)">Sin registros aún.<br><button class="btn btn-primary" style="margin-top:12px;width:auto" onclick="abrirCrearPeriodo()">+ Crear período</button></div>';
+  } else {
+    html+='<button class="btn" style="width:auto;margin-bottom:14px;font-size:0.8rem" onclick="abrirCrearPeriodo()">➕ Crear nuevo período</button>';
+    _periodos.forEach(function(per){
+      var pp=per.periodo||per; var total=per.total||0; var count=per.count||0;
+      var ttlP1=per.p1||0, ttlP2=per.p2||0;
+      var pct1=total>0?Math.round(ttlP1/total*100):0, pct2=total>0?Math.round(ttlP2/total*100):0;
+      html+=
+        '<div class="periodo-row animate" onclick="abrirDetalle(\''+pp+'\')">'
+          +'<div class="periodo-top">'
+            +'<span class="periodo-nombre">'+periodoLabel(pp)+'</span>'
+            +'<span class="periodo-total">'+clp(total)+'</span>'
+          +'</div>'
+          +'<div class="periodo-mid">'
+            +'<span class="p-pill p1">'+p1+' '+clp(ttlP1)+' ('+pct1+'%)</span>'
+            +'<span class="p-pill p2">'+p2+' '+clp(ttlP2)+' ('+pct2+'%)</span>'
+          +'</div>'
+          +'<div class="periodo-bottom">'
+            +'<span class="periodo-count">'+count+' registro'+(count!==1?'s':'')+'</span>'
+            +'<button class="btn-sm accent" onclick="event.stopPropagation();abrirReplica(\''+pp+'\')">📋 Replicar</button>'
+            +'<button class="btn-sm danger" onclick="event.stopPropagation();eliminarPeriodo(\''+pp+'\')">🗑</button>'
+          +'</div>'
+        +'</div>';
+    });
+  }
+  document.getElementById('vistaPeriodos').innerHTML=html;
+}
+
+/* ── VISTA DETALLE ── */
+function abrirDetalle(periodo){
+  _periodoActual=periodo; _filtroCateg='todos';
+  _vistaActual='detalle';
+  document.getElementById('vistaPeriodos').style.display='none';
+  document.getElementById('vistaDetalle').style.display='block';
+  document.getElementById('fabBtn').style.display='flex';
+  document.getElementById('vistaDetalle').innerHTML=
+    '<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span><div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
+
+  API.getRegistros(periodo).then(function(res){
+    _gastos=(res&&res.gastos)?res.gastos:[];
+    _categorias=(res&&res.categorias)?res.categorias:[];
+    _participantes=(res&&res.participantes)?res.participantes:['Claush','Cri'];
+    renderDetalle(res);
+  }).catch(function(e){
+    document.getElementById('vistaDetalle').innerHTML='<div style="padding:40px;text-align:center;color:var(--danger)">⚠️ '+e.message+'</div>';
+  });
+}
+
+function volverAPeriodos(){
+  _vistaActual='periodos';
+  document.getElementById('vistaDetalle').style.display='none';
+  document.getElementById('vistaPeriodos').style.display='block';
+  document.getElementById('fabBtn').style.display='none';
+}
+
+function renderDetalle(res){
+  var total=res.total||0, totalP1=res.totalP1||0, totalP2=res.totalP2||0;
+  var p1=_participantes[0]||'Claush', p2=_participantes[1]||'Cri';
+  var pct1=total>0?pct(totalP1,total):0, pct2=total>0?pct(totalP2,total):0;
+
+  // Deuda
+  var deudaP1=totalP1-total/2;  // positivo → P1 gastó más de la mitad → P2 le debe
+  var montoDeuda=Math.abs(deudaP1);
+  var deudorName=deudaP1<0?p1:p2;
+  var acreedName=deudaP1<0?p2:p1;
+
+  var html='';
+  html+='<button class="back-btn animate" onclick="volverAPeriodos()">← Todos los períodos</button>';
+  html+='<div class="detalle-titulo animate">'+periodoLabel(_periodoActual)+'</div>';
+
+  // Stats
+  html+='<div class="stats-grid animate">'
+    +'<div class="stat-card"><div class="stat-lbl">Total</div><div class="stat-val">'+clp(total)+'</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">'+p1+'</div><div class="stat-val">'+clp(totalP1)+'</div><div class="stat-pct">'+pct1+'%</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">'+p2+'</div><div class="stat-val">'+clp(totalP2)+'</div><div class="stat-pct">'+pct2+'%</div></div>'
+  +'</div>';
+
+  // Deuda mini
+  if(montoDeuda>0){
+    html+='<div class="deuda-mini animate"><span class="dm-lbl">'+deudorName+' le debe a '+acreedName+'</span><span class="dm-val">'+clp(montoDeuda)+'</span></div>';
+  } else {
+    html+='<div class="deuda-mini animate" style="color:var(--success)"><span class="dm-lbl">✅ Sin deudas</span><span class="dm-val">Saldado</span></div>';
+  }
+
+  // Chips categoría
+  var catNames=['todos'].concat(_categorias.map(function(c){ return typeof c==='string'?c:(c.nombre||c); }));
+  // Si categorias vacías, sacar de los gastos
+  if(_categorias.length===0){
+    var seenCats=[]; _gastos.forEach(function(g){ if(g.categoria&&seenCats.indexOf(g.categoria)<0) seenCats.push(g.categoria); });
+    catNames=['todos'].concat(seenCats);
+  }
+  html+='<div class="chips-wrap animate" id="chipsWrap">';
+  catNames.forEach(function(c){
+    var label=c==='todos'?'Todos':c;
+    html+='<div class="chip'+(c===_filtroCateg?' active':'')+'" onclick="setFiltro(\''+c+'\')">'+label+'</div>';
+  });
+  html+='</div>';
+
+  // Tabla gastos
+  html+='<div id="tablaGastos"></div>';
+  document.getElementById('vistaDetalle').innerHTML=html;
+  renderTabla();
+}
+
+function renderTabla(){
+  var filtered=_filtroCateg==='todos'?_gastos:_gastos.filter(function(g){ return g.categoria===_filtroCateg; });
+  var p1=_participantes[0]||'Claush', p2=_participantes[1]||'Cri';
+
+  // Actualizar chips activo
+  document.querySelectorAll('.chip').forEach(function(ch){
+    ch.classList.toggle('active', ch.textContent===((_filtroCateg==='todos')?'Todos':_filtroCateg));
+  });
+
+  var el=document.getElementById('tablaGastos');
+  if(!el) return;
+  if(!filtered.length){ el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Sin gastos en esta categoría.</div>'; return; }
+
+  var catInfoMap={};
+  _categorias.forEach(function(c){ if(typeof c==='object') catInfoMap[c.nombre]=c; });
+
+  var html='';
+  filtered.forEach(function(g){
+    var cInfo=catInfoMap[g.categoria]||{}; var emoji=cInfo.emoji||'📌';
+    var divLabel=g.division==='mitad'?'50/50':g.division==='P1'?'Solo '+p1:g.division==='P2'?'Solo '+p2:(g.division||'50/50');
+    html+=
+      '<div class="gt-row">'
+        +'<div class="gt-emoji">'+emoji+'</div>'
+        +'<div class="gt-info">'
+          +'<div class="gt-titulo">'+g.titulo+'</div>'
+          +'<div class="gt-meta">'
+            +'<span class="gt-badge">'+g.fecha+'</span>'
+            +'<span class="gt-badge">'+g.categoria+'</span>'
+            +'<span class="gt-badge">'+g.responsable+'</span>'
+            +'<span class="gt-badge">'+divLabel+'</span>'
+            +(g.notas?'<span class="gt-badge" title="'+g.notas+'">📝</span>':'')
+          +'</div>'
+        +'</div>'
+        +'<div class="gt-right">'
+          +'<div class="gt-monto">'+clp(g.monto)+'</div>'
+          +'<div class="gt-actions">'
+            +'<button class="gt-btn" onclick="abrirEdit(\''+g.id+'\')">✏️</button>'
+            +'<button class="gt-btn del" onclick="eliminarGasto(\''+g.id+'\')">🗑</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+  });
+  el.innerHTML=html;
+}
+
+function setFiltro(cat){
+  _filtroCateg=cat; renderTabla();
+}
+
+/* ── MODAL NUEVO GASTO ── */
+function abrirNuevo(){
+  var hoy=new Date(); var yyyy=hoy.getFullYear(); var mm=String(hoy.getMonth()+1).padStart(2,'0'); var dd=String(hoy.getDate()).padStart(2,'0');
+  document.getElementById('editId').value='';
+  document.getElementById('modalGastoTitulo').textContent='Nuevo gasto';
+  document.getElementById('mgTitulo').value='';
+  document.getElementById('mgMonto').value='';
+  document.getElementById('mgFecha').value=yyyy+'-'+mm+'-'+dd;
+  document.getElementById('mgNotas').value='';
+  document.getElementById('mgDivision').value='mitad';
+  rellenarSelects();
+  document.getElementById('modalGasto').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function rellenarSelects(){
+  var catSel=document.getElementById('mgCategoria');
+  var respSel=document.getElementById('mgResponsable');
+  var catNames=_categorias.map(function(c){ return typeof c==='string'?c:(c.nombre||c); });
+  catSel.innerHTML=catNames.map(function(c){ return '<option>'+c+'</option>'; }).join('');
+  respSel.innerHTML=_participantes.map(function(p){ return '<option>'+p+'</option>'; }).join('');
+}
+
+function cerrarModalGasto(e){
+  if(e&&e.target!==document.getElementById('modalGasto')) return;
+  document.getElementById('modalGasto').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function guardarGasto(){
+  var id=document.getElementById('editId').value;
+  var titulo=document.getElementById('mgTitulo').value.trim();
+  var monto=parseFloat(document.getElementById('mgMonto').value)||0;
+  var fecha=document.getElementById('mgFecha').value;
+  var categoria=document.getElementById('mgCategoria').value;
+  var responsable=document.getElementById('mgResponsable').value;
+  var division=document.getElementById('mgDivision').value;
+  var notas=document.getElementById('mgNotas').value.trim();
+  if(!titulo){ showToast('Ingresa un título','error'); return; }
+  if(!monto){ showToast('Ingresa un monto','error'); return; }
+  var btn=document.getElementById('mgGuardarBtn');
+  btn.disabled=true; btn.textContent='⏳ Guardando...';
+  var data={titulo,monto,fecha,categoria,responsable,division,notas,periodo:_periodoActual};
+  var op=id?API.editarGasto(Object.assign({id},data)):API.guardarGasto(data);
+  op.then(function(r){
+    if(r.ok){
+      showToast(id?'✅ Gasto actualizado':'✅ Gasto guardado','success');
+      document.getElementById('modalGasto').classList.remove('open');
+      document.body.style.overflow='';
+      abrirDetalle(_periodoActual);
+    } else { showToast('Error: '+r.error,'error'); }
+    btn.disabled=false; btn.textContent='💾 Guardar';
+  }).catch(function(e){ showToast(e.message,'error'); btn.disabled=false; btn.textContent='💾 Guardar'; });
+}
+
+/* ── EDITAR ── */
+function abrirEdit(id){
+  var g=_gastos.find(function(x){ return x.id==id; }); if(!g) return;
+  document.getElementById('editId').value=g.id;
+  document.getElementById('modalGastoTitulo').textContent='Editar gasto';
+  document.getElementById('mgTitulo').value=g.titulo||'';
+  document.getElementById('mgMonto').value=g.monto||'';
+  document.getElementById('mgFecha').value=g.fechaRaw||g.fecha||'';
+  document.getElementById('mgNotas').value=g.notas||'';
+  document.getElementById('mgDivision').value=g.division||'mitad';
+  rellenarSelects();
+  document.getElementById('mgCategoria').value=g.categoria||'';
+  document.getElementById('mgResponsable').value=g.responsable||'';
+  document.getElementById('modalGasto').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+/* ── ELIMINAR GASTO ── */
+function eliminarGasto(id){
+  if(!confirm('¿Eliminar este gasto?')) return;
+  API.eliminarGasto(id).then(function(r){
+    if(r.ok){ showToast('✅ Gasto eliminado','success'); abrirDetalle(_periodoActual); }
+    else { showToast('Error: '+r.error,'error'); }
+  }).catch(function(e){ showToast(e.message,'error'); });
+}
+
+/* ── CREAR PERÍODO ── */
+function abrirCrearPeriodo(){
+  var hoy=new Date();
+  var nuevo=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
+  var p=prompt('Nuevo período (YYYY-MM):',nuevo);
+  if(!p) return;
+  crearPeriodo(p.trim());
+}
+
+function crearPeriodo(periodo){
+  if(!/^\d{4}-\d{2}$/.test(periodo)){ showToast('Formato inválido. Usa YYYY-MM','error'); return; }
+  showToast('⏳ Creando período...','');
+  // Guardar gasto dummy para crear el período, o usar API específica
+  // Si el backend no tiene crearPeriodo, creamos un gasto vacío de $0 y lo eliminamos
+  // Por ahora abrimos detalle vacío:
+  abrirDetalle(periodo);
+}
+
+/* ── ELIMINAR PERÍODO ── */
+function eliminarPeriodo(periodo){
+  if(!confirm('¿Eliminar todos los gastos de '+periodoLabel(periodo)+'? Esta acción no se puede deshacer.')) return;
+  showToast('⏳ Eliminando...','');
+  // Eliminar todos los gastos del período
+  API.getRegistros(periodo).then(function(res){
+    var gastos=(res&&res.gastos)?res.gastos:[];
+    var promises=gastos.map(function(g){ return API.eliminarGasto(g.id); });
+    return Promise.all(promises);
+  }).then(function(){
+    showToast('✅ Período eliminado','success');
+    cargarPeriodos();
+  }).catch(function(e){ showToast(e.message,'error'); });
+}
+
+/* ── MODAL RÉPLICA ── */
+function abrirReplica(periodo){
+  _repOrigen=periodo;
+  document.getElementById('repOrigenNombre').textContent=periodoLabel(periodo);
+  var pt=periodo.split('-'); var y=parseInt(pt[0]),mo=parseInt(pt[1])+1;
+  if(mo>12){mo=1;y++;}
+  document.getElementById('repDestino').value=y+'-'+String(mo).padStart(2,'0');
+  document.getElementById('modalReplica').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function cerrarModalReplica(e){
+  if(e&&e.target!==document.getElementById('modalReplica')) return;
+  document.getElementById('modalReplica').classList.remove('open');
+  document.body.style.overflow='';
+}
+function confirmarReplica(){
+  var destino=document.getElementById('repDestino').value.trim();
+  if(!/^\d{4}-\d{2}$/.test(destino)){ showToast('Formato inválido','error'); return; }
+  var btn=document.getElementById('repBtn'); btn.disabled=true; btn.textContent='⏳ Replicando...';
+  // Obtener gastos del período origen y guardarlos en el destino
+  API.getRegistros(_repOrigen).then(function(res){
+    var gastos=(res&&res.gastos)?res.gastos:[];
+    if(!gastos.length){ showToast('Sin gastos para replicar','error'); btn.disabled=false; btn.textContent='✅ Replicar'; return; }
+    var promises=gastos.map(function(g){
+      return API.guardarGasto({
+        titulo:g.titulo, monto:g.monto, fecha:destino+'-01',
+        categoria:g.categoria, responsable:g.responsable,
+        division:g.division||'mitad', notas:g.notas||'',
+        periodo:destino
+      });
+    });
+    return Promise.all(promises);
+  }).then(function(){
+    showToast('✅ Período replicado a '+destino,'success');
+    document.getElementById('modalReplica').classList.remove('open');
+    document.body.style.overflow='';
+    btn.disabled=false; btn.textContent='✅ Replicar';
+    cargarPeriodos();
+  }).catch(function(e){ showToast(e.message,'error'); btn.disabled=false; btn.textContent='✅ Replicar'; });
+}
+
+/* ── INIT ── */
+var sec={ 'sec-head':1 };
+document.addEventListener('DOMContentLoaded',function(){ cargarPeriodos(); });
+cargarPeriodos();
 </script>
 </body>
 </html>

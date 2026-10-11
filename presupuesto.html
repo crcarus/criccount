@@ -11,30 +11,6 @@
     .period-wrap { display:flex; gap:8px; margin-bottom:16px; }
     .period-wrap select { flex:1; }
 
-    .prog-bar { height:6px; background:var(--bg3); border-radius:4px; overflow:hidden; margin-top:4px; }
-    .prog-fill { height:100%; border-radius:4px; transition:width .4s; }
-
-    .pres-row {
-      display:flex; align-items:center; gap:10px;
-      padding:10px 0; border-bottom:1px solid var(--border);
-    }
-    .pres-row:last-child { border-bottom:none; }
-    .pres-emoji { font-size:1.3rem; width:32px; text-align:center; flex-shrink:0; }
-    .pres-info  { flex:1; min-width:0; }
-    .pres-nombre { font-size:0.85rem; font-weight:600; }
-    .pres-pct    { font-size:0.7rem; color:var(--text3); }
-    .pres-right  { text-align:right; flex-shrink:0; min-width:80px; }
-    .pres-monto  { font-family:var(--mono); font-size:0.85rem; font-weight:700; }
-    .pres-gasto  { font-size:0.7rem; color:var(--text3); }
-
-    .pres-input-wrap { display:flex; align-items:center; gap:6px; }
-    .pres-input {
-      width:90px; padding:5px 8px; font-family:var(--mono); font-size:0.82rem;
-      background:var(--bg3); border:1px solid var(--border);
-      border-radius:var(--radius-sm); color:var(--text1); text-align:right;
-    }
-    .pres-input:focus { outline:none; border-color:var(--brand); }
-
     .total-bar {
       background:var(--bg2); border:1px solid var(--border);
       border-radius:var(--radius); padding:14px;
@@ -42,7 +18,47 @@
       margin-bottom:12px; box-shadow:var(--shadow);
     }
     .total-bar .lbl { font-size:0.75rem; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
-    .total-bar .val { font-family:var(--mono); font-weight:700; font-size:1.1rem; }
+    .total-bar .val { font-family:var(--mono); font-weight:700; font-size:1.15rem; }
+
+    .copy-btn-wrap { margin-bottom:14px; }
+    .copy-btn {
+      width:100%; padding:10px 16px; border-radius:var(--radius);
+      border:1px dashed var(--border); background:var(--bg3); color:var(--text2);
+      font-size:0.82rem; cursor:pointer; transition:all .15s;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .copy-btn:hover { border-color:var(--brand); color:var(--brand); background:rgba(99,102,241,.06); }
+
+    .pres-row {
+      display:flex; align-items:center; gap:10px;
+      padding:11px 0; border-bottom:1px solid var(--border);
+    }
+    .pres-row:last-child { border-bottom:none; }
+    .pres-emoji  { font-size:1.3rem; width:32px; text-align:center; flex-shrink:0; }
+    .pres-info   { flex:1; min-width:0; }
+    .pres-nombre { font-size:0.85rem; font-weight:600; }
+    .pres-pct    { font-size:0.7rem; color:var(--text3); margin-top:2px; }
+    .pres-right  { text-align:right; flex-shrink:0; min-width:110px; }
+
+    /* Input estilo cifra con prefijo $ */
+    .pres-input-wrap {
+      display:flex; align-items:center;
+      background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);
+      overflow:hidden; transition:border-color .15s;
+    }
+    .pres-input-wrap:focus-within { border-color:var(--brand); }
+    .pres-prefix { font-family:var(--mono); font-size:0.82rem; color:var(--text3); padding:5px 6px 5px 8px; }
+    .pres-input {
+      flex:1; min-width:0; padding:5px 8px 5px 0;
+      font-family:var(--mono); font-size:0.85rem; font-weight:700;
+      background:transparent; border:none; color:var(--text1); text-align:right;
+    }
+    .pres-input:focus { outline:none; }
+
+    .prog-bar  { height:4px; background:var(--bg3); border-radius:3px; overflow:hidden; margin-top:4px; }
+    .prog-fill { height:100%; border-radius:3px; transition:width .4s; }
+
+    .pres-gasto-lbl { font-size:0.68rem; color:var(--text3); margin-top:2px; }
   </style>
 </head>
 <body>
@@ -85,118 +101,154 @@ requireAuth();
 var _periodo = '';
 var _data    = null;
 
-function openDrawer() {
-  document.getElementById('drawerOverlay').classList.add('open');
-  document.getElementById('drawerPanel').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeDrawer() {
-  document.getElementById('drawerOverlay').classList.remove('open');
-  document.getElementById('drawerPanel').classList.remove('open');
-  document.body.style.overflow = '';
-}
+function openDrawer(){ document.getElementById('drawerOverlay').classList.add('open'); document.getElementById('drawerPanel').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeDrawer(){ document.getElementById('drawerOverlay').classList.remove('open'); document.getElementById('drawerPanel').classList.remove('open'); document.body.style.overflow=''; }
 
-function clp(n) { return '$' + Math.round(n||0).toLocaleString('es-CL'); }
-function pct(v,t){ return t>0 ? Math.min(100,Math.round(v/t*100)) : 0; }
-function colorPct(p){ return p>=100?'var(--danger)':p>=80?'var(--warning)':'var(--success)'; }
+function clp(n){ return Math.round(n||0).toLocaleString('es-CL'); }
+
 function periodoLabel(p){
-  var m=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  var parts=p.split('-'); return m[parseInt(parts[1])-1]+' '+parts[0];
+  var m=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var pt=p.split('-'); return m[parseInt(pt[1])-1]+' '+pt[0];
+}
+function prevPeriodo(p){
+  var pt=p.split('-'); var y=parseInt(pt[0]),mo=parseInt(pt[1])-1;
+  if(mo<1){mo=12;y--;} return y+'-'+String(mo).padStart(2,'0');
 }
 
-function render(d) {
-  _data = d;
-  var cats    = d.categorias || [];
-  var presup  = d.presupuesto || {};
-  var periodos= d.periodos || [_periodo];
+function actualizarTotal(){
+  var cats=_data&&_data.categorias||[];
+  var total=0;
+  cats.forEach(function(_,i){
+    var inp=document.getElementById('pres_'+i);
+    if(inp) total+=parseFloat(inp.value.replace(/\./g,'').replace(',','.'))||0;
+  });
+  var el=document.getElementById('totalVal');
+  if(el) el.textContent='$'+Math.round(total).toLocaleString('es-CL');
+}
 
-  var opts = periodos.map(function(p){
+function render(d){
+  _data=d;
+  var cats    = d.categorias  || [];
+  var presup  = d.presupuesto || {};
+  var gastoCat= d.gastoActual || {};  // gastos reales del período (si el API los devuelve)
+  var periodos= d.periodos    || [_periodo];
+
+  var opts=periodos.map(function(p){
     return '<option value="'+p+'"'+(p===_periodo?' selected':'')+'>'+periodoLabel(p)+'</option>';
   }).join('');
 
-  var totalPresup = Object.values(presup).reduce(function(s,v){return s+(v||0);},0);
+  var totalPresup=Object.values(presup).reduce(function(s,v){ return s+(v||0); },0);
 
-  var html = '<div class="period-wrap animate">'
-    + '<select onchange="cambiarPeriodo(this.value)">'+opts+'</select>'
-    + '</div>';
+  var html='<div class="period-wrap animate"><select onchange="cambiarPeriodo(this.value)">'+opts+'</select></div>';
 
-  html += '<div class="total-bar animate delay-1">'
-    + '<div><div class="lbl">Total presupuestado</div><div class="val">'+clp(totalPresup)+'</div></div>'
-    + '<button class="btn btn-primary" style="width:auto;padding:8px 16px;margin:0;font-size:0.82rem" onclick="guardarTodo()">💾 Guardar</button>'
-    + '</div>';
+  html+='<div class="total-bar animate delay-1">'
+    +'<div><div class="lbl">Total presupuestado</div><div class="val" id="totalVal">$'+clp(totalPresup)+'</div></div>'
+    +'<button class="btn btn-primary" style="width:auto;padding:8px 16px;margin:0;font-size:0.82rem" onclick="guardarTodo()">💾 Guardar</button>'
+  +'</div>';
 
-  html += '<div class="card animate delay-1">'
-    + '<div class="card-title">Editar presupuesto por categoría</div>';
+  // Botón copiar mes anterior
+  var anteriorPer=prevPeriodo(_periodo);
+  html+='<div class="copy-btn-wrap animate delay-1">'
+    +'<button class="copy-btn" onclick="copiarDelMesAnterior()">📋 Copiar presupuesto de '+periodoLabel(anteriorPer)+'</button>'
+  +'</div>';
 
-  cats.forEach(function(c, i) {
-    var nombre = c.nombre;
-    var emoji  = c.emoji || '📌';
-    var monto  = presup[nombre] || 0;
-    html += '<div class="pres-row">'
-      + '<div class="pres-emoji">'+emoji+'</div>'
-      + '<div class="pres-info">'
-      + '<div class="pres-nombre">'+nombre+'</div>'
-      + '</div>'
-      + '<div class="pres-right">'
-      + '<input class="pres-input" type="number" id="pres_'+i+'" data-cat="'+nombre+'" value="'+(monto||'')+'" placeholder="0" min="0" inputmode="numeric">'
-      + '</div>'
-      + '</div>';
+  html+='<div class="card animate delay-1"><div class="card-title">Presupuesto por categoría</div>';
+
+  cats.forEach(function(c,i){
+    var nombre=c.nombre||c; var emoji=c.emoji||'📌';
+    var monto=presup[nombre]||0;
+    var gasto=gastoCat[nombre]||0;
+    var pp=monto>0?Math.min(100,Math.round(gasto/monto*100)):0;
+    var color=pp>=100?'var(--danger)':pp>=80?'var(--warning)':'var(--success)';
+
+    html+='<div class="pres-row">'
+      +'<div class="pres-emoji">'+emoji+'</div>'
+      +'<div class="pres-info">'
+        +'<div class="pres-nombre">'+nombre+'</div>'
+        +(gasto>0?'<div class="prog-bar"><div class="prog-fill" style="width:'+pp+'%;background:'+color+'"></div></div>'
+                 +'<div class="pres-gasto-lbl">Gastado: $'+clp(gasto)+'</div>':'')
+      +'</div>'
+      +'<div class="pres-right">'
+        +'<div class="pres-input-wrap">'
+          +'<span class="pres-prefix">$</span>'
+          +'<input class="pres-input" type="text" inputmode="numeric" id="pres_'+i+'"'
+            +' data-cat="'+nombre+'"'
+            +' value="'+(monto?clp(monto):'')+'"'
+            +' placeholder="0"'
+            +' oninput="formatInput(this);actualizarTotal()">'
+        +'</div>'
+      +'</div>'
+    +'</div>';
   });
 
-  html += '</div>';
-  document.getElementById('page').innerHTML = html;
+  html+='</div>';
+  document.getElementById('page').innerHTML=html;
 }
 
-function guardarTodo() {
-  var cats = _data && _data.categorias || [];
-  var items = cats.map(function(c, i) {
-    var inp = document.getElementById('pres_'+i);
-    return { categoria: c.nombre, monto: inp ? (parseFloat(inp.value)||0) : 0 };
-  }).filter(function(x){ return x.monto > 0; });
+/* Formato miles mientras se escribe */
+function formatInput(inp){
+  var raw=inp.value.replace(/\./g,'').replace(/[^0-9]/g,'');
+  var num=parseInt(raw)||0;
+  inp.value=num?num.toLocaleString('es-CL'):'';
+}
 
-  if (!items.length) { showToast('Ingresa al menos un monto', 'error'); return; }
+function getValores(){
+  var cats=_data&&_data.categorias||[];
+  return cats.map(function(c,i){
+    var inp=document.getElementById('pres_'+i);
+    var raw=inp?inp.value.replace(/\./g,''):0;
+    return { categoria:c.nombre||c, monto:parseFloat(raw)||0 };
+  }).filter(function(x){ return x.monto>0; });
+}
 
-  var btn = document.querySelector('.btn-primary');
-  if (btn) { btn.disabled=true; btn.textContent='⏳ Guardando...'; }
+function guardarTodo(){
+  var items=getValores();
+  if(!items.length){ showToast('Ingresa al menos un monto','error'); return; }
+  var btn=document.querySelector('.btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Guardando...'; }
+  API.guardarPresupuesto({ periodo:_periodo, items:items })
+    .then(function(r){
+      if(r.ok){ showToast('✅ Presupuesto guardado','success'); }
+      else { showToast('Error: '+r.error,'error'); }
+      if(btn){ btn.disabled=false; btn.textContent='💾 Guardar'; }
+    }).catch(function(e){ showToast(e.message,'error'); if(btn){ btn.disabled=false; btn.textContent='💾 Guardar'; } });
+}
 
-  API.guardarPresupuesto({ periodo: _periodo, items: items })
-    .then(function(r) {
-      if (r.ok) { showToast('✅ Presupuesto guardado', 'success'); }
-      else { showToast('Error: '+r.error, 'error'); }
-      if (btn) { btn.disabled=false; btn.textContent='💾 Guardar'; }
-    })
-    .catch(function(e) {
-      showToast('Error: '+e.message, 'error');
-      if (btn) { btn.disabled=false; btn.textContent='💾 Guardar'; }
+function copiarDelMesAnterior(){
+  var anteriorPer=prevPeriodo(_periodo);
+  showToast('⏳ Cargando presupuesto de '+periodoLabel(anteriorPer)+'...','');
+  API.getPresupuesto(anteriorPer).then(function(d){
+    var presup=d.presupuesto||{};
+    var cats=_data&&_data.categorias||[];
+    cats.forEach(function(c,i){
+      var nombre=c.nombre||c;
+      var monto=presup[nombre]||0;
+      var inp=document.getElementById('pres_'+i);
+      if(inp) inp.value=monto?monto.toLocaleString('es-CL'):'';
     });
+    actualizarTotal();
+    showToast('✅ Presupuesto copiado de '+periodoLabel(anteriorPer),'success');
+  }).catch(function(e){ showToast('Error al cargar: '+e.message,'error'); });
 }
 
-function cambiarPeriodo(p) {
-  _periodo = p;
-  document.getElementById('page').innerHTML =
-    '<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span>'
-    +'<div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
+function cambiarPeriodo(p){
+  _periodo=p;
+  document.getElementById('page').innerHTML=
+    '<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span><div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
   cargar(p);
 }
 
-function cargar(periodo) {
-  API.getPresupuesto(periodo)
-    .then(function(d) {
-      if (d.error) { showToast('Error: '+d.error,'error'); return; }
-      render(d);
-    })
-    .catch(function(e) {
-      document.getElementById('page').innerHTML =
-        '<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ '+e.message+'</div>';
-    });
+function cargar(periodo){
+  API.getPresupuesto(periodo).then(function(d){
+    if(d.error){ showToast('Error: '+d.error,'error'); return; }
+    render(d);
+  }).catch(function(e){
+    document.getElementById('page').innerHTML='<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ '+e.message+'</div>';
+  });
 }
 
-// Agregar getResumenPeriodos al API si no existe
-if (!API.getResumenPeriodos) {
-  API.getResumenPeriodos = function() { return Promise.resolve(null); };
-}
-
-_periodo = new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+var _now=new Date();
+_periodo=_now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0');
 cargar(_periodo);
 </script>
 </body>
