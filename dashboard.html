@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CriCount — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/tabler-icons.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<nav class="nav">
+  <button class="nav-hamburger" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+  <div class="nav-brand"><span>Cri</span>Count</div>
+  <button class="nav-fab-top" onclick="irA('registros')"><i class="ti ti-plus"></i></button>
+</nav>
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer-panel" id="drawerPanel">
+  <div class="drawer-header">
+    <div class="drawer-brand"><span>Cri</span>Count</div>
+    <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+  </div>
+  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')"><i class="ti ti-chart-donut"></i><span>Dashboard</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('registros')"><i class="ti ti-layout-list"></i><span>Registros</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')"><i class="ti ti-chart-bar"></i><span>Presupuesto</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('formulario')"><i class="ti ti-settings"></i><span>Ajustes</span></button>
+  <div class="drawer-sep"></div>
+  <button class="drawer-item" onclick="logout()"><i class="ti ti-logout"></i><span>Cerrar sesion</span></button>
+</div>
+<div class="page">
+  <div style="text-align:center;padding:60px 0;color:var(--text3)">
+    <span class="loader"></span>
+    <div style="margin-top:12px;font-size:0.85rem">Cargando dashboard...</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  function openDrawer() {
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('drawerPanel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawerPanel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+</script>
+</body>
+</html>
