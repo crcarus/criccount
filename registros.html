@@ -6,50 +6,245 @@
   <title>CriCount — Registros</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/tabler-icons.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .period-wrap { display:flex; gap:8px; margin-bottom:16px; }
+    .period-wrap select { flex:1; }
+
+    .gasto-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: var(--shadow);
+    }
+    .gasto-emoji { font-size: 1.4rem; flex-shrink:0; width:36px; text-align:center; }
+    .gasto-body  { flex:1; min-width:0; }
+    .gasto-titulo { font-size:0.9rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .gasto-meta   { font-size:0.72rem; color:var(--text3); margin-top:2px; }
+    .gasto-right  { text-align:right; flex-shrink:0; }
+    .gasto-monto  { font-family:var(--mono); font-weight:700; font-size:0.9rem; }
+    .gasto-resp   { font-size:0.7rem; color:var(--text3); margin-top:2px; }
+
+    .gasto-actions { display:flex; gap:6px; margin-top:8px; }
+    .btn-sm {
+      padding: 5px 12px; font-size:0.75rem; font-weight:600;
+      border-radius:8px; border:1px solid var(--border);
+      background:var(--bg3); color:var(--text2); cursor:pointer;
+      transition: background .12s, color .12s;
+    }
+    .btn-sm:hover { background:var(--brand); color:#fff; border-color:var(--brand); }
+    .btn-sm.danger:hover { background:var(--danger); border-color:var(--danger); color:#fff; }
+
+    .resumen-strip {
+      display:flex; gap:8px; margin-bottom:12px;
+    }
+    .resumen-kpi {
+      flex:1; background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius); padding:10px 12px; text-align:center;
+      box-shadow:var(--shadow);
+    }
+    .resumen-kpi .val { font-family:var(--mono); font-weight:700; font-size:1rem; }
+    .resumen-kpi .lbl { font-size:0.68rem; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+
+    .empty-state { text-align:center; padding:48px 0; color:var(--text3); font-size:0.85rem; }
+
+    /* Modal edición */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.5);
+      z-index:300; display:flex; align-items:flex-end; justify-content:center;
+      opacity:0; pointer-events:none; transition:opacity .2s;
+    }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+    .modal-box {
+      background:var(--bg2); border-radius:20px 20px 0 0;
+      padding:24px 20px 32px; width:100%; max-width:480px;
+      transform:translateY(40px); transition:transform .25s;
+    }
+    .modal-overlay.open .modal-box { transform:translateY(0); }
+    .modal-title { font-size:1rem; font-weight:700; margin-bottom:16px; }
+  </style>
 </head>
 <body>
+
 <nav class="nav">
-  <button class="nav-hamburger" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+  <button class="nav-hamburger" onclick="openDrawer()">☰</button>
   <div class="nav-brand"><span>Cri</span>Count</div>
-  <button class="nav-fab-top" onclick="irA('registros')"><i class="ti ti-plus"></i></button>
+  <button class="nav-fab-top" onclick="irA('formulario')" title="Nuevo gasto">＋</button>
 </nav>
+
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer-panel" id="drawerPanel">
   <div class="drawer-header">
     <div class="drawer-brand"><span>Cri</span>Count</div>
-    <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
-  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')"><i class="ti ti-chart-donut"></i><span>Dashboard</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('registros')"><i class="ti ti-layout-list"></i><span>Registros</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')"><i class="ti ti-chart-bar"></i><span>Presupuesto</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('formulario')"><i class="ti ti-settings"></i><span>Ajustes</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')">📊 <span>Dashboard</span></button>
+  <button class="drawer-item active" onclick="closeDrawer()">📋 <span>Registros</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')">📈 <span>Presupuesto</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('formulario')">➕ <span>Nuevo gasto</span></button>
   <div class="drawer-sep"></div>
-  <button class="drawer-item" onclick="logout()"><i class="ti ti-logout"></i><span>Cerrar sesion</span></button>
+  <button class="drawer-item" onclick="logout()">🚪 <span>Cerrar sesión</span></button>
 </div>
-<div class="page">
+
+<div class="page" id="page">
   <div style="text-align:center;padding:60px 0;color:var(--text3)">
     <span class="loader"></span>
     <div style="margin-top:12px;font-size:0.85rem">Cargando registros...</div>
   </div>
 </div>
+
+<!-- Modal eliminar -->
+<div class="modal-overlay" id="modalEliminar">
+  <div class="modal-box">
+    <div class="modal-title">¿Eliminar este gasto?</div>
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:20px" id="modalEliminarDesc"></p>
+    <button class="btn btn-danger" onclick="confirmarEliminar()">Sí, eliminar</button>
+    <button class="btn btn-ghost" onclick="cerrarModal('modalEliminar')">Cancelar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
 <script>
-  requireAuth();
-  function openDrawer() {
-    document.getElementById('drawerOverlay').classList.add('open');
-    document.getElementById('drawerPanel').classList.add('open');
-    document.body.style.overflow = 'hidden';
+requireAuth();
+
+var _periodo = '';
+var _gastos  = [];
+var _cats    = [];
+var _idEliminar = null;
+
+function openDrawer() {
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawerPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawerPanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function clp(n) { return '$' + Math.round(n||0).toLocaleString('es-CL'); }
+function emojiCat(nombre) {
+  var c = _cats.find(function(x){ return x.nombre === nombre; });
+  return c ? c.emoji : '📌';
+}
+function periodoLabel(p) {
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var parts = p.split('-');
+  return meses[parseInt(parts[1])-1] + ' ' + parts[0];
+}
+
+function render(d) {
+  _gastos = d.gastos || [];
+  _cats   = d.categorias || [];
+
+  var periodos = (d.periodos && d.periodos.length) ? d.periodos : [_periodo];
+  var opts = periodos.map(function(p){
+    return '<option value="'+p+'"'+(p===_periodo?' selected':'')+'>'+periodoLabel(p)+'</option>';
+  }).join('');
+
+  var html = '<div class="period-wrap animate">'
+    + '<select onchange="cambiarPeriodo(this.value)">'+opts+'</select>'
+    + '</div>';
+
+  // Resumen
+  html += '<div class="resumen-strip animate delay-1">'
+    + '<div class="resumen-kpi"><div class="val">'+clp(d.total)+'</div><div class="lbl">Total</div></div>'
+    + '<div class="resumen-kpi"><div class="val">'+clp(d.totalP1)+'</div><div class="lbl">'+(d.participantes&&d.participantes[0]||'P1')+'</div></div>'
+    + '<div class="resumen-kpi"><div class="val">'+clp(d.totalP2)+'</div><div class="lbl">'+(d.participantes&&d.participantes[1]||'P2')+'</div></div>'
+    + '</div>';
+
+  if (!_gastos.length) {
+    html += '<div class="empty-state">📭 Sin gastos en este período</div>';
+  } else {
+    // Ordenar por fecha desc
+    var lista = _gastos.slice().reverse();
+    lista.forEach(function(g, i) {
+      var emoji = emojiCat(g.categoria);
+      html += '<div class="gasto-card animate" style="animation-delay:'+(i*0.03)+'s">'
+        + '<div class="gasto-emoji">'+emoji+'</div>'
+        + '<div class="gasto-body">'
+        + '<div class="gasto-titulo">'+g.titulo+'</div>'
+        + '<div class="gasto-meta">'+g.fecha+' · '+g.categoria+'</div>'
+        + '<div class="gasto-actions">'
+        + '<button class="btn-sm danger" onclick="pedirEliminar(\''+g.id+'\',\''+g.titulo.replace(/'/g,"\\'")+'\')" >Eliminar</button>'
+        + '</div>'
+        + '</div>'
+        + '<div class="gasto-right">'
+        + '<div class="gasto-monto">'+clp(g.monto)+'</div>'
+        + '<div class="gasto-resp">'+g.responsable+'</div>'
+        + '</div>'
+        + '</div>';
+    });
   }
-  function closeDrawer() {
-    document.getElementById('drawerOverlay').classList.remove('open');
-    document.getElementById('drawerPanel').classList.remove('open');
-    document.body.style.overflow = '';
-  }
+
+  document.getElementById('page').innerHTML = html;
+}
+
+function cambiarPeriodo(p) {
+  _periodo = p;
+  document.getElementById('page').innerHTML =
+    '<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span>'
+    +'<div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
+  cargar(p);
+}
+
+function pedirEliminar(id, titulo) {
+  _idEliminar = id;
+  document.getElementById('modalEliminarDesc').textContent = '"' + titulo + '"';
+  document.getElementById('modalEliminar').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function confirmarEliminar() {
+  if (!_idEliminar) return;
+  API.eliminarGasto(_idEliminar)
+    .then(function(r) {
+      cerrarModal('modalEliminar');
+      if (r.ok) {
+        showToast('Gasto eliminado', 'success');
+        cargar(_periodo);
+      } else {
+        showToast('Error: ' + r.error, 'error');
+      }
+    })
+    .catch(function(e) { showToast('Error: ' + e.message, 'error'); });
+}
+
+function cargar(periodo) {
+  // Primero cargamos los gastos del período
+  Promise.all([
+    API.getRegistros(periodo),
+    API.getResumenPeriodos ? API.getResumenPeriodos() : Promise.resolve(null)
+  ])
+  .then(function(results) {
+    var d = results[0];
+    if (d.error) { showToast('Error: ' + d.error, 'error'); return; }
+    // Si el resumen tiene periodos, los usamos para el selector
+    if (results[1] && results[1].periodos) {
+      d.periodos = results[1].periodos.map(function(p){ return p.periodo; });
+    }
+    render(d);
+  })
+  .catch(function(err) {
+    document.getElementById('page').innerHTML =
+      '<div style="text-align:center;padding:40px 16px;color:var(--danger)">⚠️ '+err.message+'</div>';
+  });
+}
+
+_periodo = new Date().getFullYear() + '-' + String(new Date().getMonth()+1).padStart(2,'0');
+cargar(_periodo);
 </script>
 </body>
 </html>

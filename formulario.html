@@ -3,53 +3,233 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>CriCount — Formulario</title>
+  <title>CriCount — Nuevo gasto</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/tabler-icons.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .division-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 4px;
+    }
+    .div-btn {
+      padding: 10px 8px; border-radius: var(--radius);
+      border: 1.5px solid var(--border); background: var(--bg3);
+      color: var(--text2); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: all .15s; text-align: center;
+    }
+    .div-btn.selected {
+      border-color: var(--brand); background: var(--brand); color: #fff;
+    }
+    .monto-preview {
+      display: flex; gap: 8px; margin-top: 10px;
+    }
+    .monto-preview-item {
+      flex: 1; background: var(--bg3); border-radius: var(--radius-sm);
+      padding: 8px 10px; font-size: 0.8rem;
+    }
+    .monto-preview-item .lbl { color: var(--text3); font-size: 0.7rem; }
+    .monto-preview-item .val { font-family: var(--mono); font-weight: 700; margin-top: 2px; }
+    .monto-personalizado { display:none; margin-top:8px; }
+    .monto-personalizado.visible { display:block; }
+  </style>
 </head>
 <body>
+
 <nav class="nav">
-  <button class="nav-hamburger" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+  <button class="nav-hamburger" onclick="openDrawer()">☰</button>
   <div class="nav-brand"><span>Cri</span>Count</div>
-  <button class="nav-fab-top" onclick="irA('registros')"><i class="ti ti-plus"></i></button>
+  <button class="nav-fab-top" onclick="irA('dashboard')" title="Dashboard">🏠</button>
 </nav>
+
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer-panel" id="drawerPanel">
   <div class="drawer-header">
     <div class="drawer-brand"><span>Cri</span>Count</div>
-    <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
-  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')"><i class="ti ti-chart-donut"></i><span>Dashboard</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('registros')"><i class="ti ti-layout-list"></i><span>Registros</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')"><i class="ti ti-chart-bar"></i><span>Presupuesto</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('formulario')"><i class="ti ti-settings"></i><span>Ajustes</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')">📊 <span>Dashboard</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('registros')">📋 <span>Registros</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')">📈 <span>Presupuesto</span></button>
+  <button class="drawer-item active" onclick="closeDrawer()">➕ <span>Nuevo gasto</span></button>
   <div class="drawer-sep"></div>
-  <button class="drawer-item" onclick="logout()"><i class="ti ti-logout"></i><span>Cerrar sesion</span></button>
+  <button class="drawer-item" onclick="logout()">🚪 <span>Cerrar sesión</span></button>
 </div>
-<div class="page">
+
+<div class="page" id="page">
   <div style="text-align:center;padding:60px 0;color:var(--text3)">
     <span class="loader"></span>
-    <div style="margin-top:12px;font-size:0.85rem">Cargando formulario...</div>
+    <div style="margin-top:12px;font-size:0.85rem">Cargando...</div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
 <script>
-  requireAuth();
-  function openDrawer() {
-    document.getElementById('drawerOverlay').classList.add('open');
-    document.getElementById('drawerPanel').classList.add('open');
-    document.body.style.overflow = 'hidden';
+requireAuth();
+
+var _config = null;
+var _division = '50/50';
+
+function openDrawer() {
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawerPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawerPanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function clp(n) { return '$' + Math.round(n||0).toLocaleString('es-CL'); }
+
+function render(config) {
+  _config = config;
+  var p1 = (config.participantes && config.participantes[0]) || 'P1';
+  var p2 = (config.participantes && config.participantes[1]) || 'P2';
+
+  // Fecha hoy
+  var hoy = new Date();
+  var fechaHoy = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
+  var periodoHoy = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
+
+  var opsCat = (config.categorias||[]).map(function(c){
+    return '<option value="'+c.nombre+'">'+c.emoji+' '+c.nombre+'</option>';
+  }).join('');
+  var opsResp = (config.participantes||[]).map(function(p){
+    return '<option value="'+p+'">'+p+'</option>';
+  }).join('');
+  var opsPer = (config.periodos||[periodoHoy]).map(function(p){
+    var m=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var parts=p.split('-');
+    return '<option value="'+p+'"'+(p===periodoHoy?' selected':'')+'>'+m[parseInt(parts[1])-1]+' '+parts[0]+'</option>';
+  }).join('');
+
+  var html = '<div class="animate">'
+    + '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:20px">➕ Nuevo gasto</h2>'
+
+    + '<div class="form-group"><label>Título</label>'
+    + '<input type="text" id="fTitulo" placeholder="Ej: Supermercado Lider" autocomplete="off"></div>'
+
+    + '<div class="form-group"><label>Monto (CLP)</label>'
+    + '<input type="number" id="fMonto" placeholder="0" min="0" inputmode="numeric" oninput="actualizarPreview()"></div>'
+
+    + '<div class="form-group"><label>Categoría</label>'
+    + '<select id="fCat">'+opsCat+'</select></div>'
+
+    + '<div class="form-group"><label>Fecha</label>'
+    + '<input type="date" id="fFecha" value="'+fechaHoy+'"></div>'
+
+    + '<div class="form-group"><label>Período</label>'
+    + '<select id="fPeriodo">'+opsPer+'</select></div>'
+
+    + '<div class="form-group"><label>Pagó</label>'
+    + '<select id="fResp">'+opsResp+'</select></div>'
+
+    + '<div class="form-group"><label>División</label>'
+    + '<div class="division-grid">'
+    + '<button class="div-btn selected" data-div="50/50" onclick="setDiv(this)">50 / 50</button>'
+    + '<button class="div-btn" data-div="p1" onclick="setDiv(this)">Solo '+p1+'</button>'
+    + '<button class="div-btn" data-div="p2" onclick="setDiv(this)">Solo '+p2+'</button>'
+    + '<button class="div-btn" data-div="personalizado" onclick="setDiv(this)">Personalizado</button>'
+    + '</div>'
+    + '<div class="monto-personalizado" id="montoPersonalizado">'
+    + '<div style="display:flex;gap:8px;margin-top:8px">'
+    + '<div style="flex:1"><label style="font-size:0.7rem;color:var(--text3)">'+p1+'</label>'
+    + '<input type="number" id="fMp1" placeholder="0" inputmode="numeric" oninput="actualizarPreview()"></div>'
+    + '<div style="flex:1"><label style="font-size:0.7rem;color:var(--text3)">'+p2+'</label>'
+    + '<input type="number" id="fMp2" placeholder="0" inputmode="numeric" oninput="actualizarPreview()"></div>'
+    + '</div></div>'
+    + '<div class="monto-preview" id="montoPreview">'
+    + '<div class="monto-preview-item"><div class="lbl">'+p1+'</div><div class="val" id="prevP1">$0</div></div>'
+    + '<div class="monto-preview-item"><div class="lbl">'+p2+'</div><div class="val" id="prevP2">$0</div></div>'
+    + '</div>'
+    + '</div>'
+
+    + '<div class="form-group"><label>Notas (opcional)</label>'
+    + '<input type="text" id="fNotas" placeholder="Detalles adicionales"></div>'
+
+    + '<button class="btn btn-primary" onclick="guardar()" id="btnGuardar">💾 Guardar gasto</button>'
+    + '<button class="btn btn-ghost" onclick="irA(\'dashboard\')">Cancelar</button>'
+    + '</div>';
+
+  document.getElementById('page').innerHTML = html;
+  actualizarPreview();
+}
+
+function setDiv(btn) {
+  document.querySelectorAll('.div-btn').forEach(function(b){ b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  _division = btn.getAttribute('data-div');
+  var mp = document.getElementById('montoPersonalizado');
+  if (_division === 'personalizado') mp.classList.add('visible');
+  else mp.classList.remove('visible');
+  actualizarPreview();
+}
+
+function actualizarPreview() {
+  var monto = parseFloat(document.getElementById('fMonto') && document.getElementById('fMonto').value) || 0;
+  var mp1 = 0, mp2 = 0;
+  if (_division === '50/50')  { mp1 = Math.round(monto/2); mp2 = monto - mp1; }
+  else if (_division === 'p1') { mp1 = monto; mp2 = 0; }
+  else if (_division === 'p2') { mp1 = 0; mp2 = monto; }
+  else if (_division === 'personalizado') {
+    mp1 = parseFloat(document.getElementById('fMp1') && document.getElementById('fMp1').value) || 0;
+    mp2 = parseFloat(document.getElementById('fMp2') && document.getElementById('fMp2').value) || 0;
   }
-  function closeDrawer() {
-    document.getElementById('drawerOverlay').classList.remove('open');
-    document.getElementById('drawerPanel').classList.remove('open');
-    document.body.style.overflow = '';
-  }
+  if (document.getElementById('prevP1')) document.getElementById('prevP1').textContent = clp(mp1);
+  if (document.getElementById('prevP2')) document.getElementById('prevP2').textContent = clp(mp2);
+}
+
+function guardar() {
+  var titulo = (document.getElementById('fTitulo').value||'').trim();
+  var monto  = parseFloat(document.getElementById('fMonto').value) || 0;
+  var cat    = document.getElementById('fCat').value;
+  var fecha  = document.getElementById('fFecha').value;
+  var periodo= document.getElementById('fPeriodo').value;
+  var resp   = document.getElementById('fResp').value;
+  var notas  = (document.getElementById('fNotas').value||'').trim();
+  var mp1    = _division==='personalizado' ? (parseFloat(document.getElementById('fMp1').value)||0) : 0;
+  var mp2    = _division==='personalizado' ? (parseFloat(document.getElementById('fMp2').value)||0) : 0;
+
+  if (!titulo) { showToast('Ingresa un título', 'error'); return; }
+  if (!monto)  { showToast('Ingresa el monto', 'error'); return; }
+
+  var btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+
+  API.guardarGasto({ titulo, monto, categoria:cat, fecha, periodo, responsable:resp,
+    division:_division, montoClaush:mp1, montoCri:mp2, notas })
+    .then(function(r) {
+      if (r.ok) {
+        showToast('✅ Gasto guardado', 'success');
+        setTimeout(function(){ irA('dashboard'); }, 1200);
+      } else {
+        showToast('Error: ' + r.error, 'error');
+        btn.disabled = false; btn.textContent = '💾 Guardar gasto';
+      }
+    })
+    .catch(function(e) {
+      showToast('Error: ' + e.message, 'error');
+      btn.disabled = false; btn.textContent = '💾 Guardar gasto';
+    });
+}
+
+// Cargar config
+API.getConfig()
+  .then(function(d) {
+    if (d.error) { showToast('Error cargando config', 'error'); return; }
+    render(d);
+  })
+  .catch(function(e) {
+    document.getElementById('page').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ '+e.message+'</div>';
+  });
 </script>
 </body>
 </html>

@@ -6,50 +6,228 @@
   <title>CriCount — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/tabler-icons.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .prog-bar { height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .prog-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+    .gasto-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .gasto-row:last-child { border-bottom: none; }
+    .gasto-emoji { font-size: 1.3rem; width: 32px; text-align: center; flex-shrink: 0; }
+    .gasto-info { flex: 1; min-width: 0; }
+    .gasto-titulo { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gasto-meta { font-size: 0.72rem; color: var(--text3); }
+    .gasto-monto { font-family: var(--mono); font-size: 0.88rem; font-weight: 700; flex-shrink: 0; }
+    .deuda-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; margin-top: 8px; }
+    .deuda-chip.positivo { background: #d1fae5; color: #065f46; }
+    .deuda-chip.negativo { background: #ffe4e6; color: #e11d48; }
+    @media (prefers-color-scheme: dark) {
+      .deuda-chip.positivo { background: #064e3b; color: #6ee7b7; }
+      .deuda-chip.negativo { background: #4c0519; color: #fda4af; }
+    }
+    .cat-grid { display: flex; flex-direction: column; gap: 8px; }
+    .cat-row { display: flex; align-items: center; gap: 8px; }
+    .cat-label { font-size: 0.8rem; width: 110px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cat-bar-wrap { flex: 1; }
+    .cat-monto { font-family: var(--mono); font-size: 0.75rem; color: var(--text2); width: 72px; text-align: right; flex-shrink: 0; }
+    .period-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .period-wrap select { flex: 1; }
+    .sec { margin-bottom: 12px; }
+  </style>
 </head>
 <body>
+
 <nav class="nav">
-  <button class="nav-hamburger" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+  <button class="nav-hamburger" onclick="openDrawer()">☰</button>
   <div class="nav-brand"><span>Cri</span>Count</div>
-  <button class="nav-fab-top" onclick="irA('registros')"><i class="ti ti-plus"></i></button>
+  <button class="nav-fab-top" onclick="irA('formulario')" title="Nuevo gasto">＋</button>
 </nav>
+
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer-panel" id="drawerPanel">
   <div class="drawer-header">
     <div class="drawer-brand"><span>Cri</span>Count</div>
-    <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
-  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')"><i class="ti ti-chart-donut"></i><span>Dashboard</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('registros')"><i class="ti ti-layout-list"></i><span>Registros</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')"><i class="ti ti-chart-bar"></i><span>Presupuesto</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('formulario')"><i class="ti ti-settings"></i><span>Ajustes</span></button>
+  <button class="drawer-item active" onclick="closeDrawer()">📊 <span>Dashboard</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('registros')">📋 <span>Registros</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')">📈 <span>Presupuesto</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('formulario')">➕ <span>Nuevo gasto</span></button>
   <div class="drawer-sep"></div>
-  <button class="drawer-item" onclick="logout()"><i class="ti ti-logout"></i><span>Cerrar sesion</span></button>
+  <button class="drawer-item" onclick="logout()">🚪 <span>Cerrar sesión</span></button>
 </div>
-<div class="page">
+
+<div class="page" id="page">
   <div style="text-align:center;padding:60px 0;color:var(--text3)">
     <span class="loader"></span>
     <div style="margin-top:12px;font-size:0.85rem">Cargando dashboard...</div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
 <script>
-  requireAuth();
-  function openDrawer() {
-    document.getElementById('drawerOverlay').classList.add('open');
-    document.getElementById('drawerPanel').classList.add('open');
-    document.body.style.overflow = 'hidden';
+requireAuth();
+
+function openDrawer() {
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawerPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawerPanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function clp(n) { return '$' + Math.round(n || 0).toLocaleString('es-CL'); }
+function pct(v, t) { return t > 0 ? Math.min(100, Math.round(v / t * 100)) : 0; }
+function colorPct(p) {
+  if (p >= 100) return 'var(--danger)';
+  if (p >= 80)  return 'var(--warning)';
+  return 'var(--success)';
+}
+function emojiCat(cats, nombre) {
+  var c = (cats || []).find(function(x) { return x.nombre === nombre; });
+  return c ? c.emoji : '📌';
+}
+function periodoLabel(p) {
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var parts = p.split('-');
+  return meses[parseInt(parts[1]) - 1] + ' ' + parts[0];
+}
+
+var _periodo = '';
+
+function render(d) {
+  var p1 = (d.participantes && d.participantes[0]) || 'P1';
+  var p2 = (d.participantes && d.participantes[1]) || 'P2';
+  var pctGasto = pct(d.totalGastado, d.totalPresupuesto);
+  var deudaAbs = Math.abs(d.deudaP1 || 0);
+  var quienDebe    = (d.deudaP1 || 0) < 0 ? p1 : p2;
+  var quienRecibe  = (d.deudaP1 || 0) < 0 ? p2 : p1;
+
+  var cats = Object.entries(d.porCategoria || {})
+    .sort(function(a, b) { return b[1] - a[1]; }).slice(0, 8);
+  var maxCat = cats.length ? cats[0][1] : 1;
+
+  var periodos = d.periodos || [_periodo];
+  var opcionesPeriodo = periodos.map(function(p) {
+    return '<option value="' + p + '"' + (p === _periodo ? ' selected' : '') + '>' + periodoLabel(p) + '</option>';
+  }).join('');
+
+  var recientes = (d.recientes || []).slice(0, 6);
+  var html = '';
+
+  // Selector período
+  html += '<div class="period-wrap animate">'
+    + '<select onchange="cambiarPeriodo(this.value)">' + opcionesPeriodo + '</select>'
+    + '</div>';
+
+  // KPIs
+  html += '<div class="kpi-grid sec animate delay-1">'
+    + '<div class="kpi"><div class="kpi-label">Total gastado</div>'
+    + '<div class="kpi-value">' + clp(d.totalGastado) + '</div>'
+    + '<div class="kpi-sub">' + (d.gastosDetalle || []).length + ' gastos</div></div>'
+    + '<div class="kpi"><div class="kpi-label">Presupuesto</div>'
+    + '<div class="kpi-value">' + clp(d.totalPresupuesto) + '</div>'
+    + '<div class="kpi-sub">' + pctGasto + '% usado</div></div>'
+    + '</div>';
+
+  // Barra presupuesto
+  html += '<div class="card sec animate delay-1">'
+    + '<div class="card-title">Uso del presupuesto</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px">'
+    + '<span>' + clp(d.totalGastado) + ' gastado</span>'
+    + '<span style="color:var(--text3)">' + clp(d.totalPresupuesto - d.totalGastado) + ' restante</span>'
+    + '</div>'
+    + '<div class="prog-bar"><div class="prog-fill" style="width:' + pctGasto + '%;background:' + colorPct(pctGasto) + '"></div></div>'
+    + '</div>';
+
+  // División
+  html += '<div class="card sec animate delay-2">'
+    + '<div class="card-title">División de gastos</div>'
+    + '<div class="kpi-grid" style="margin-bottom:8px">'
+    + '<div><div class="kpi-label">' + p1 + '</div>'
+    + '<div class="kpi-value" style="font-size:1rem">' + clp(d.totalP1) + '</div>'
+    + '<div class="kpi-sub">pagó ' + clp(d.pagadoP1) + '</div></div>'
+    + '<div><div class="kpi-label">' + p2 + '</div>'
+    + '<div class="kpi-value" style="font-size:1rem">' + clp(d.totalP2) + '</div>'
+    + '<div class="kpi-sub">pagó ' + clp(d.pagadoP2) + '</div></div>'
+    + '</div>';
+
+  if (deudaAbs > 100) {
+    html += '<div class="deuda-chip ' + ((d.deudaP1 || 0) < 0 ? 'negativo' : 'positivo') + '">'
+      + '💸 ' + quienDebe + ' debe ' + clp(deudaAbs) + ' a ' + quienRecibe + '</div>';
+  } else {
+    html += '<div class="deuda-chip positivo">✅ Están al día</div>';
   }
-  function closeDrawer() {
-    document.getElementById('drawerOverlay').classList.remove('open');
-    document.getElementById('drawerPanel').classList.remove('open');
-    document.body.style.overflow = '';
+  html += '</div>';
+
+  // Por categoría
+  if (cats.length) {
+    html += '<div class="card sec animate delay-2"><div class="card-title">Por categoría</div><div class="cat-grid">';
+    cats.forEach(function(entry) {
+      var nombre = entry[0], monto = entry[1];
+      var p = pct(monto, maxCat);
+      var emoji = emojiCat(d.categorias, nombre);
+      var presup = (d.presupuesto || {})[nombre] || 0;
+      var pPres = presup > 0 ? pct(monto, presup) : 0;
+      html += '<div class="cat-row">'
+        + '<div class="cat-label">' + emoji + ' ' + nombre + '</div>'
+        + '<div class="cat-bar-wrap"><div class="prog-bar"><div class="prog-fill" style="width:' + p + '%;background:' + (pPres >= 100 ? 'var(--danger)' : 'var(--brand)') + '"></div></div></div>'
+        + '<div class="cat-monto">' + clp(monto) + '</div>'
+        + '</div>';
+    });
+    html += '</div></div>';
   }
+
+  // Últimos gastos
+  if (recientes.length) {
+    html += '<div class="card sec animate delay-3"><div class="card-title">Últimos gastos</div>';
+    recientes.forEach(function(g) {
+      var emoji = emojiCat(d.categorias, g.categoria);
+      html += '<div class="gasto-row">'
+        + '<div class="gasto-emoji">' + emoji + '</div>'
+        + '<div class="gasto-info">'
+        + '<div class="gasto-titulo">' + g.titulo + '</div>'
+        + '<div class="gasto-meta">' + g.fecha + ' · ' + g.responsable + ' · ' + g.categoria + '</div>'
+        + '</div>'
+        + '<div class="gasto-monto">' + clp(g.monto) + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('page').innerHTML = html;
+}
+
+function cambiarPeriodo(p) {
+  _periodo = p;
+  document.getElementById('page').innerHTML =
+    '<div style="text-align:center;padding:60px 0;color:var(--text3)">'
+    + '<span class="loader"></span>'
+    + '<div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
+  cargar(p);
+}
+
+function cargar(periodo) {
+  API.getDashboard(periodo)
+    .then(function(d) {
+      if (d.error) { showToast('Error: ' + d.error, 'error'); return; }
+      render(d);
+    })
+    .catch(function(err) {
+      document.getElementById('page').innerHTML =
+        '<div style="text-align:center;padding:40px 16px;color:var(--danger)">'
+        + '⚠️ No se pudo conectar.<br><small>' + err.message + '</small></div>';
+    });
+}
+
+_periodo = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+cargar(_periodo);
 </script>
 </body>
 </html>

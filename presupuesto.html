@@ -6,50 +6,198 @@
   <title>CriCount — Presupuesto</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/tabler-icons.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .period-wrap { display:flex; gap:8px; margin-bottom:16px; }
+    .period-wrap select { flex:1; }
+
+    .prog-bar { height:6px; background:var(--bg3); border-radius:4px; overflow:hidden; margin-top:4px; }
+    .prog-fill { height:100%; border-radius:4px; transition:width .4s; }
+
+    .pres-row {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 0; border-bottom:1px solid var(--border);
+    }
+    .pres-row:last-child { border-bottom:none; }
+    .pres-emoji { font-size:1.3rem; width:32px; text-align:center; flex-shrink:0; }
+    .pres-info  { flex:1; min-width:0; }
+    .pres-nombre { font-size:0.85rem; font-weight:600; }
+    .pres-pct    { font-size:0.7rem; color:var(--text3); }
+    .pres-right  { text-align:right; flex-shrink:0; min-width:80px; }
+    .pres-monto  { font-family:var(--mono); font-size:0.85rem; font-weight:700; }
+    .pres-gasto  { font-size:0.7rem; color:var(--text3); }
+
+    .pres-input-wrap { display:flex; align-items:center; gap:6px; }
+    .pres-input {
+      width:90px; padding:5px 8px; font-family:var(--mono); font-size:0.82rem;
+      background:var(--bg3); border:1px solid var(--border);
+      border-radius:var(--radius-sm); color:var(--text1); text-align:right;
+    }
+    .pres-input:focus { outline:none; border-color:var(--brand); }
+
+    .total-bar {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px;
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:12px; box-shadow:var(--shadow);
+    }
+    .total-bar .lbl { font-size:0.75rem; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+    .total-bar .val { font-family:var(--mono); font-weight:700; font-size:1.1rem; }
+  </style>
 </head>
 <body>
+
 <nav class="nav">
-  <button class="nav-hamburger" onclick="openDrawer()"><i class="ti ti-menu-2"></i></button>
+  <button class="nav-hamburger" onclick="openDrawer()">☰</button>
   <div class="nav-brand"><span>Cri</span>Count</div>
-  <button class="nav-fab-top" onclick="irA('registros')"><i class="ti ti-plus"></i></button>
+  <button class="nav-fab-top" onclick="guardarTodo()" title="Guardar">💾</button>
 </nav>
+
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer-panel" id="drawerPanel">
   <div class="drawer-header">
     <div class="drawer-brand"><span>Cri</span>Count</div>
-    <button class="drawer-close" onclick="closeDrawer()"><i class="ti ti-x"></i></button>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
-  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')"><i class="ti ti-chart-donut"></i><span>Dashboard</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('registros')"><i class="ti ti-layout-list"></i><span>Registros</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('presupuesto')"><i class="ti ti-chart-bar"></i><span>Presupuesto</span></button>
-  <button class="drawer-item" onclick="closeDrawer();irA('formulario')"><i class="ti ti-settings"></i><span>Ajustes</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('dashboard')">📊 <span>Dashboard</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('registros')">📋 <span>Registros</span></button>
+  <button class="drawer-item active" onclick="closeDrawer()">📈 <span>Presupuesto</span></button>
+  <button class="drawer-item" onclick="closeDrawer();irA('formulario')">➕ <span>Nuevo gasto</span></button>
   <div class="drawer-sep"></div>
-  <button class="drawer-item" onclick="logout()"><i class="ti ti-logout"></i><span>Cerrar sesion</span></button>
+  <button class="drawer-item" onclick="logout()">🚪 <span>Cerrar sesión</span></button>
 </div>
-<div class="page">
+
+<div class="page" id="page">
   <div style="text-align:center;padding:60px 0;color:var(--text3)">
     <span class="loader"></span>
     <div style="margin-top:12px;font-size:0.85rem">Cargando presupuesto...</div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
 <script>
-  requireAuth();
-  function openDrawer() {
-    document.getElementById('drawerOverlay').classList.add('open');
-    document.getElementById('drawerPanel').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeDrawer() {
-    document.getElementById('drawerOverlay').classList.remove('open');
-    document.getElementById('drawerPanel').classList.remove('open');
-    document.body.style.overflow = '';
-  }
+requireAuth();
+
+var _periodo = '';
+var _data    = null;
+
+function openDrawer() {
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('drawerPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('drawerPanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function clp(n) { return '$' + Math.round(n||0).toLocaleString('es-CL'); }
+function pct(v,t){ return t>0 ? Math.min(100,Math.round(v/t*100)) : 0; }
+function colorPct(p){ return p>=100?'var(--danger)':p>=80?'var(--warning)':'var(--success)'; }
+function periodoLabel(p){
+  var m=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var parts=p.split('-'); return m[parseInt(parts[1])-1]+' '+parts[0];
+}
+
+function render(d) {
+  _data = d;
+  var cats    = d.categorias || [];
+  var presup  = d.presupuesto || {};
+  var periodos= d.periodos || [_periodo];
+
+  var opts = periodos.map(function(p){
+    return '<option value="'+p+'"'+(p===_periodo?' selected':'')+'>'+periodoLabel(p)+'</option>';
+  }).join('');
+
+  var totalPresup = Object.values(presup).reduce(function(s,v){return s+(v||0);},0);
+
+  var html = '<div class="period-wrap animate">'
+    + '<select onchange="cambiarPeriodo(this.value)">'+opts+'</select>'
+    + '</div>';
+
+  html += '<div class="total-bar animate delay-1">'
+    + '<div><div class="lbl">Total presupuestado</div><div class="val">'+clp(totalPresup)+'</div></div>'
+    + '<button class="btn btn-primary" style="width:auto;padding:8px 16px;margin:0;font-size:0.82rem" onclick="guardarTodo()">💾 Guardar</button>'
+    + '</div>';
+
+  html += '<div class="card animate delay-1">'
+    + '<div class="card-title">Editar presupuesto por categoría</div>';
+
+  cats.forEach(function(c, i) {
+    var nombre = c.nombre;
+    var emoji  = c.emoji || '📌';
+    var monto  = presup[nombre] || 0;
+    html += '<div class="pres-row">'
+      + '<div class="pres-emoji">'+emoji+'</div>'
+      + '<div class="pres-info">'
+      + '<div class="pres-nombre">'+nombre+'</div>'
+      + '</div>'
+      + '<div class="pres-right">'
+      + '<input class="pres-input" type="number" id="pres_'+i+'" data-cat="'+nombre+'" value="'+(monto||'')+'" placeholder="0" min="0" inputmode="numeric">'
+      + '</div>'
+      + '</div>';
+  });
+
+  html += '</div>';
+  document.getElementById('page').innerHTML = html;
+}
+
+function guardarTodo() {
+  var cats = _data && _data.categorias || [];
+  var items = cats.map(function(c, i) {
+    var inp = document.getElementById('pres_'+i);
+    return { categoria: c.nombre, monto: inp ? (parseFloat(inp.value)||0) : 0 };
+  }).filter(function(x){ return x.monto > 0; });
+
+  if (!items.length) { showToast('Ingresa al menos un monto', 'error'); return; }
+
+  var btn = document.querySelector('.btn-primary');
+  if (btn) { btn.disabled=true; btn.textContent='⏳ Guardando...'; }
+
+  API.guardarPresupuesto({ periodo: _periodo, items: items })
+    .then(function(r) {
+      if (r.ok) { showToast('✅ Presupuesto guardado', 'success'); }
+      else { showToast('Error: '+r.error, 'error'); }
+      if (btn) { btn.disabled=false; btn.textContent='💾 Guardar'; }
+    })
+    .catch(function(e) {
+      showToast('Error: '+e.message, 'error');
+      if (btn) { btn.disabled=false; btn.textContent='💾 Guardar'; }
+    });
+}
+
+function cambiarPeriodo(p) {
+  _periodo = p;
+  document.getElementById('page').innerHTML =
+    '<div style="text-align:center;padding:60px 0;color:var(--text3)"><span class="loader"></span>'
+    +'<div style="margin-top:12px;font-size:0.85rem">Cargando...</div></div>';
+  cargar(p);
+}
+
+function cargar(periodo) {
+  API.getPresupuesto(periodo)
+    .then(function(d) {
+      if (d.error) { showToast('Error: '+d.error,'error'); return; }
+      render(d);
+    })
+    .catch(function(e) {
+      document.getElementById('page').innerHTML =
+        '<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ '+e.message+'</div>';
+    });
+}
+
+// Agregar getResumenPeriodos al API si no existe
+if (!API.getResumenPeriodos) {
+  API.getResumenPeriodos = function() { return Promise.resolve(null); };
+}
+
+_periodo = new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+cargar(_periodo);
 </script>
 </body>
 </html>
