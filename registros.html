@@ -158,6 +158,12 @@
     .modal-btns { display:flex; gap:8px; margin-top:16px; }
     .modal-btns .btn { flex:1; margin:0; }
 
+    /* Cat grid dentro del modal — tiles más compactos */
+    #mgCatGrid { grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap:5px; }
+    #mgCatGrid .cat-tile { padding:6px 2px; }
+    #mgCatGrid .cat-tile-icon { font-size:1.2rem; }
+    #mgCatGrid .cat-tile-name { font-size:0.55rem; max-width:52px; }
+
     /* FAB */
     .fab {
       position:fixed; bottom:24px; right:20px; z-index:100;
@@ -229,7 +235,8 @@
     </div>
     <div class="modal-field">
       <label>Categoría</label>
-      <select id="mgCategoria"></select>
+      <input type="hidden" id="mgCategoria">
+      <div class="cat-filter-grid" id="mgCatGrid" style="margin-bottom:0"></div>
     </div>
     <div class="modal-field">
       <label>Quién paga</label>
@@ -498,17 +505,37 @@ function abrirNuevo(){
   document.getElementById('mgFecha').value=yyyy+'-'+mm+'-'+dd;
   document.getElementById('mgNotas').value='';
   document.getElementById('mgDivision').value='mitad';
-  rellenarSelects();
+  rellenarSelects('');
   document.getElementById('modalGasto').classList.add('open');
   document.body.style.overflow='hidden';
 }
 
-function rellenarSelects(){
-  var catSel=document.getElementById('mgCategoria');
+function rellenarSelects(catSeleccionada){
   var respSel=document.getElementById('mgResponsable');
-  var catNames=_categorias.map(function(c){ return typeof c==='string'?c:(c.nombre||c); });
-  catSel.innerHTML=catNames.map(function(c){ return '<option>'+c+'</option>'; }).join('');
   respSel.innerHTML=_participantes.map(function(p){ return '<option>'+p+'</option>'; }).join('');
+
+  // Grid de categorías en el modal
+  var grid=document.getElementById('mgCatGrid');
+  var catObjs=_categorias.map(function(c){ return typeof c==='string'?{nombre:c,emoji:'📌'}:c; });
+  var primera=catSeleccionada||document.getElementById('mgCategoria').value||(catObjs[0]&&catObjs[0].nombre)||'';
+  if(!primera&&catObjs.length) primera=catObjs[0].nombre;
+  document.getElementById('mgCategoria').value=primera;
+
+  grid.innerHTML=catObjs.map(function(c){
+    var activo=c.nombre===primera?' active':'';
+    return '<div class="cat-tile'+activo+'" onclick="selCatModal(\''+c.nombre.replace(/'/g,"\\'")+'\')">'
+      +'<span class="cat-tile-icon">'+(c.emoji||'📌')+'</span>'
+      +'<span class="cat-tile-name">'+c.nombre+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function selCatModal(nombre){
+  document.getElementById('mgCategoria').value=nombre;
+  document.querySelectorAll('#mgCatGrid .cat-tile').forEach(function(t){
+    var n=t.querySelector('.cat-tile-name');
+    t.classList.toggle('active', n&&n.textContent===nombre);
+  });
 }
 
 function cerrarModalGasto(e){
@@ -553,8 +580,7 @@ function abrirEdit(id){
   document.getElementById('mgFecha').value=g.fechaRaw||g.fecha||'';
   document.getElementById('mgNotas').value=g.notas||'';
   document.getElementById('mgDivision').value=g.division||'mitad';
-  rellenarSelects();
-  document.getElementById('mgCategoria').value=g.categoria||'';
+  rellenarSelects(g.categoria||'');
   document.getElementById('mgResponsable').value=g.responsable||'';
   document.getElementById('modalGasto').classList.add('open');
   document.body.style.overflow='hidden';
