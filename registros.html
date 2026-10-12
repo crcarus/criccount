@@ -63,18 +63,36 @@
     .deuda-mini .dm-lbl { color:var(--text3); flex:1; }
     .deuda-mini .dm-val { font-family:var(--mono); font-weight:700; }
 
-    /* Filtro categorías */
-    .chips-wrap {
-      display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;
-      margin-bottom:12px; scrollbar-width:none;
+    /* Filtro categorías — grid de iconos */
+    .cat-filter-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+      gap:6px;
+      margin-bottom:14px;
     }
-    .chips-wrap::-webkit-scrollbar { display:none; }
-    .chip {
-      white-space:nowrap; padding:5px 12px; border-radius:20px; font-size:0.75rem;
-      border:1px solid var(--border); background:var(--bg3); color:var(--text2);
-      cursor:pointer; transition:all .15s; flex-shrink:0;
+    .cat-tile {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px; padding:8px 4px;
+      background:var(--bg3); border:1.5px solid var(--border);
+      border-radius:10px; cursor:pointer;
+      transition:all .15s; user-select:none;
     }
-    .chip.active { background:var(--brand); border-color:var(--brand); color:#fff; }
+    .cat-tile:hover { border-color:var(--brand); background:rgba(99,102,241,.08); }
+    .cat-tile.active {
+      background:rgba(99,102,241,.18);
+      border-color:var(--brand);
+      box-shadow:0 0 0 2px rgba(99,102,241,.25);
+    }
+    .cat-tile-icon { font-size:1.4rem; line-height:1; }
+    .cat-tile-name {
+      font-size:0.6rem; font-weight:600; color:var(--text2);
+      text-align:center; line-height:1.2;
+      word-break:break-word; max-width:58px;
+    }
+    .cat-tile.active .cat-tile-name { color:var(--brand); }
+
+    /* Tile "Todos" especial */
+    .cat-tile.todos .cat-tile-icon { font-size:1.1rem; }
 
     /* Grilla gastos */
     .gt-row {
@@ -386,17 +404,28 @@ function renderDetalle(res){
     html+='<div class="deuda-mini animate" style="color:var(--success)"><span class="dm-lbl">✅ Sin deudas</span><span class="dm-val">Saldado</span></div>';
   }
 
-  // Chips categoría
-  var catNames=['todos'].concat(_categorias.map(function(c){ return typeof c==='string'?c:(c.nombre||c); }));
+  // Construir lista de categorías con emoji
+  var catInfoMap2={};
+  _categorias.forEach(function(c){ if(typeof c==='object') catInfoMap2[c.nombre]=c; });
   // Si categorias vacías, sacar de los gastos
+  var catObjs=[];
   if(_categorias.length===0){
     var seenCats=[]; _gastos.forEach(function(g){ if(g.categoria&&seenCats.indexOf(g.categoria)<0) seenCats.push(g.categoria); });
-    catNames=['todos'].concat(seenCats);
+    catObjs=seenCats.map(function(n){ return {nombre:n,emoji:'📌'}; });
+  } else {
+    catObjs=_categorias.map(function(c){ return typeof c==='string'?{nombre:c,emoji:'📌'}:c; });
   }
-  html+='<div class="chips-wrap animate" id="chipsWrap">';
-  catNames.forEach(function(c){
-    var label=c==='todos'?'Todos':c;
-    html+='<div class="chip'+(c===_filtroCateg?' active':'')+'" onclick="setFiltro(\''+c+'\')">'+label+'</div>';
+
+  // Grid de tiles (primero "Todos", luego categorías con gastos reales)
+  var catsConGastos=catObjs.filter(function(c){ return _gastos.some(function(g){ return g.categoria===c.nombre; }); });
+  html+='<div class="cat-filter-grid animate" id="catFilterGrid">';
+  html+='<div class="cat-tile todos'+((_filtroCateg==='todos')?' active':'')+'" onclick="setFiltro(\'todos\')">'
+    +'<span class="cat-tile-icon">🔍</span><span class="cat-tile-name">Todos</span></div>';
+  catsConGastos.forEach(function(c){
+    var activo=_filtroCateg===c.nombre?' active':'';
+    html+='<div class="cat-tile'+activo+'" onclick="setFiltro(\''+c.nombre.replace(/'/g,"\\'")+'\')">'
+      +'<span class="cat-tile-icon">'+(c.emoji||'📌')+'</span>'
+      +'<span class="cat-tile-name">'+c.nombre+'</span></div>';
   });
   html+='</div>';
 
@@ -410,9 +439,13 @@ function renderTabla(){
   var filtered=_filtroCateg==='todos'?_gastos:_gastos.filter(function(g){ return g.categoria===_filtroCateg; });
   var p1=_participantes[0]||'Claush', p2=_participantes[1]||'Cri';
 
-  // Actualizar chips activo
-  document.querySelectorAll('.chip').forEach(function(ch){
-    ch.classList.toggle('active', ch.textContent===((_filtroCateg==='todos')?'Todos':_filtroCateg));
+  // Actualizar tiles activo
+  document.querySelectorAll('.cat-tile').forEach(function(tile){
+    var name=tile.querySelector('.cat-tile-name');
+    if(!name) return;
+    var label=name.textContent;
+    var isActive=(_filtroCateg==='todos'&&label==='Todos')||(_filtroCateg!=='todos'&&label===_filtroCateg);
+    tile.classList.toggle('active', isActive);
   });
 
   var el=document.getElementById('tablaGastos');
