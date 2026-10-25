@@ -373,9 +373,20 @@ function render(){
     var cInfo=catInfoMap[c.nombre]||{}; var emoji=cInfo.emoji||'📌';
     var gastosCat=gastosDetalle.filter(function(g){ return g.categoria===c.nombre; });
     var catId='cat_'+c.nombre.replace(/\W/g,'_');
-    var compMonto=dcCats?(dcCats[c.nombre]||0):null;
+    var compMonto=dcCats?(dcCats[c.nombre]!=null?dcCats[c.nombre]:0):null;
     var dH='';
-    if(compMonto!==null){ var diff=c.monto-compMonto; dH=diff>0?'<span class="cat-delta up">▲'+clp(diff)+'</span>':diff<0?'<span class="cat-delta down">▼'+clp(Math.abs(diff))+'</span>':''; }
+    if(dcCats!==null){
+      var diff=c.monto-(compMonto||0);
+      if(compMonto===0||compMonto==null){
+        dH='<span class="cat-delta up" title="Categoría nueva este mes">★ nuevo</span>';
+      } else if(diff>0){
+        dH='<span class="cat-delta up">▲'+clp(diff)+'</span>';
+      } else if(diff<0){
+        dH='<span class="cat-delta down">▼'+clp(Math.abs(diff))+'</span>';
+      } else {
+        dH='<span class="cat-delta" style="color:var(--text3)">= igual</span>';
+      }
+    }
 
     catsHtml+=
       '<div class="cat-item">'
@@ -450,8 +461,7 @@ function render(){
   var periodos=d.periodos||[];
   periodos.forEach(function(p){
     if(p===_periodo || _histData[p]) return;
-    fetch(API_URL+'?action=getDashboard&periodo='+p)
-      .then(function(r){ return r.json(); })
+    API.getDashboard(p)
       .then(function(res){
         if(res&&res.porCategoria){
           _histData[p]=res.porCategoria;
