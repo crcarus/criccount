@@ -235,7 +235,8 @@ function render(){
   var totalP2          = d.totalP2  ||0;
   var pagadoP1         = d.pagadoP1 ||0;
   var pagadoP2         = d.pagadoP2 ||0;
-  var deudaP1          = d.deudaP1  ||0;
+  // Calculamos saldo localmente igual que registros: pagado - corresponde_por_division
+  var deudaP1          = pagadoP1 - totalP1;
   var participantes    = d.participantes||['Claush','Cri'];
   var p1name=participantes[0]||'Claush', p2name=participantes[1]||'Cri';
   var pptPct=pct(totalGastado,totalPresupuesto);
@@ -292,10 +293,12 @@ function render(){
     +'</div></div>';
 
   /* Liquidación */
-  var corr=totalGastado/2;
+  // totalP1/totalP2 = suma de montoP1/montoP2 = lo que le corresponde pagar según división real
+  // pagadoP1/pagadoP2 = lo que desembolsó de su bolsillo
+  // deudaP1 ya calculado arriba como pagadoP1 - totalP1
   var montoDeuda=Math.abs(deudaP1);
-  var deudorName=deudaP1>0?p1name:p2name;
-  var acreedName=deudaP1>0?p2name:p1name;
+  var deudorName=deudaP1<0?p1name:p2name;   // negativo → P1 pagó menos → P1 debe
+  var acreedName=deudaP1<0?p2name:p1name;
   var deudaHtml=
     '<div class="deuda-card animate delay-2">'
     +'<div class="deuda-title"><span>💳 Liquidación del período</span>'+(dc?'<span class="sec-badge">vs '+periodoShort(_compPer)+'</span>':'')+'</div>'
@@ -303,13 +306,13 @@ function render(){
       +'<div class="persona-col"><div class="persona-name">👤 '+p1name+'</div>'
         +'<div class="persona-row"><span class="pl">Gastó</span><span class="pv">'+clp(totalP1)+'</span></div>'
         +'<div class="persona-row"><span class="pl">Pagó</span><span class="pv">'+clp(pagadoP1)+'</span></div>'
-        +'<div class="persona-row"><span class="pl">Corresponde</span><span class="pv">'+clp(corr)+'</span></div>'
+        +'<div class="persona-row"><span class="pl">Corresponde</span><span class="pv">'+clp(totalP1)+'</span></div>'
         +(dc?'<div class="persona-row" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border)"><span class="pl">'+periodoShort(_compPer)+'</span><span class="pv">'+clp(dc.totalP1||0)+'</span></div>':'')
       +'</div>'
       +'<div class="persona-col"><div class="persona-name">👤 '+p2name+'</div>'
         +'<div class="persona-row"><span class="pl">Gastó</span><span class="pv">'+clp(totalP2)+'</span></div>'
         +'<div class="persona-row"><span class="pl">Pagó</span><span class="pv">'+clp(pagadoP2)+'</span></div>'
-        +'<div class="persona-row"><span class="pl">Corresponde</span><span class="pv">'+clp(corr)+'</span></div>'
+        +'<div class="persona-row"><span class="pl">Corresponde</span><span class="pv">'+clp(totalP2)+'</span></div>'
         +(dc?'<div class="persona-row" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border)"><span class="pl">'+periodoShort(_compPer)+'</span><span class="pv">'+clp(dc.totalP2||0)+'</span></div>':'')
       +'</div>'
     +'</div>'
