@@ -245,7 +245,7 @@
     <div class="modal-field">
       <label>División</label>
       <select id="mgDivision">
-        <option value="mitad">Por mitades</option>
+        <option value="mitad">Por mitades (50/50)</option>
         <option value="P1">Solo Claush</option>
         <option value="P2">Solo Cri</option>
       </select>
@@ -387,11 +387,19 @@ function renderDetalle(res){
   var p1=_participantes[0]||'Claush', p2=_participantes[1]||'Cri';
   var pct1=total>0?pct(totalP1,total):0, pct2=total>0?pct(totalP2,total):0;
 
-  // Deuda
-  var deudaP1=totalP1-total/2;  // positivo → P1 gastó más de la mitad → P2 le debe
-  var montoDeuda=Math.abs(deudaP1);
-  var deudorName=deudaP1<0?p1:p2;
-  var acreedName=deudaP1<0?p2:p1;
+  // Deuda: basada en quién pagó vs lo que le corresponde
+  // pagadoP1 = lo que Claush desembolsó de su bolsillo
+  // totalP1  = lo que le corresponde pagar a Claush según división
+  var pagadoP1=res.pagadoP1||_gastos.reduce(function(s,g){ return s+(g.responsable===p1?g.monto:0); },0);
+  var pagadoP2=res.pagadoP2||_gastos.reduce(function(s,g){ return s+(g.responsable===p2?g.monto:0); },0);
+  // Si el backend no devuelve totalP1/totalP2 como "lo que le corresponde", los calculamos
+  var corrP1=totalP1||_gastos.reduce(function(s,g){ return s+(g.montoP1||0); },0);
+  var corrP2=totalP2||_gastos.reduce(function(s,g){ return s+(g.montoP2||0); },0);
+  // deuda = pagado - corresponde; positivo → pagó de más → el otro le debe
+  var saldoP1=pagadoP1-corrP1;  // + → Cri le debe a Claush; - → Claush le debe a Cri
+  var montoDeuda=Math.abs(saldoP1);
+  var deudorName=saldoP1<0?p1:p2;   // saldoP1 negativo → P1 pagó menos → P1 debe
+  var acreedName=saldoP1<0?p2:p1;
 
   var html='';
   html+='<button class="back-btn animate" onclick="volverAPeriodos()">← Todos los períodos</button>';
@@ -405,11 +413,21 @@ function renderDetalle(res){
   +'</div>';
 
   // Deuda mini
-  if(montoDeuda>0){
-    html+='<div class="deuda-mini animate"><span class="dm-lbl">'+deudorName+' le debe a '+acreedName+'</span><span class="dm-val">'+clp(montoDeuda)+'</span></div>';
+  if(montoDeuda>500){
+    html+='<div class="deuda-mini animate">'
+      +'<span class="dm-lbl">💸 '+deudorName+' le debe a '+acreedName+'</span>'
+      +'<span class="dm-val" style="color:var(--danger)">'+clp(montoDeuda)+'</span>'
+      +'</div>';
   } else {
-    html+='<div class="deuda-mini animate" style="color:var(--success)"><span class="dm-lbl">✅ Sin deudas</span><span class="dm-val">Saldado</span></div>';
+    html+='<div class="deuda-mini animate">'
+      +'<span class="dm-lbl">✅ Sin deudas</span>'
+      +'<span class="dm-val" style="color:var(--success)">Saldado</span>'
+      +'</div>';
   }
+  // Detalle pagado por cada uno
+  html+='<div class="deuda-mini animate" style="font-size:0.75rem">'
+    +'<span class="dm-lbl" style="color:var(--text3)">'+p1+' pagó '+clp(pagadoP1)+' · '+p2+' pagó '+clp(pagadoP2)+'</span>'
+    +'</div>';
 
   // Construir lista de categorías con emoji
   var catInfoMap2={};
@@ -579,7 +597,13 @@ function abrirEdit(id){
   document.getElementById('mgMonto').value=g.monto||'';
   document.getElementById('mgFecha').value=g.fechaRaw||g.fecha||'';
   document.getElementById('mgNotas').value=g.notas||'';
-  document.getElementById('mgDivision').value=g.division||'mitad';
+  // Normalizar división: "50/50" y variantes → "mitad", "p1"/"solo p1" → "P1", "p2"/"solo p2" → "P2"
+  var divVal=(g.division||'mitad').toLowerCase();
+  if(divVal==='50/50'||divVal==='mitad'||divVal==='')divVal='mitad';
+  else if(divVal==='p1'||divVal.indexOf('p1')>=0||divVal===(_participantes[0]||'claush').toLowerCase())divVal='P1';
+  else if(divVal==='p2'||divVal.indexOf('p2')>=0||divVal===(_participantes[1]||'cri').toLowerCase())divVal='P2';
+  else divVal='mitad';
+  document.getElementById('mgDivision').value=divVal;
   rellenarSelects(g.categoria||'');
   document.getElementById('mgResponsable').value=g.responsable||'';
   document.getElementById('modalGasto').classList.add('open');
