@@ -105,6 +105,14 @@
     .cat-delta  { font-size:0.65rem; font-weight:600; }
     .cat-delta.up   { color:var(--danger); }
     .cat-delta.down { color:var(--success); }
+    .liq-delta  { font-size:0.68rem; font-weight:600; margin-left:6px; }
+    .liq-delta.up   { color:var(--danger); }
+    .liq-delta.down { color:var(--success); }
+    /* Gráfico histórico por categoría */
+    .hist-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:14px; box-shadow:var(--shadow); }
+    .hist-title { font-size:0.82rem; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .hist-select { font-size:0.82rem; border:1px solid var(--border); border-radius:8px; padding:4px 8px; background:var(--bg); color:var(--text1); flex:1; min-width:140px; }
+    .hist-canvas-wrap { position:relative; height:180px; }
     .cat-chevron { font-size:0.75rem; color:var(--text3); margin-left:4px; transition:transform .2s; flex-shrink:0; }
     .cat-header.open .cat-chevron { transform:rotate(90deg); }
     .cat-gastos { display:none; border-top:1px solid var(--border); }
@@ -193,6 +201,9 @@ var _compPer  = '';
 var _data     = null;
 var _dataComp = null;
 var _lineChart= null;
+var _histChart= null;
+var _histData  = {};   // {periodo: {cat: monto}}
+var _histPeriodos = [];
 
 /* ── HELPERS ── */
 function clp(n){ return '$'+Math.round(n||0).toLocaleString('es-CL'); }
@@ -304,16 +315,14 @@ function render(){
     +'<div class="deuda-title"><span>💳 Liquidación del período</span>'+(dc?'<span class="sec-badge">vs '+periodoShort(_compPer)+'</span>':'')+'</div>'
     +'<div class="personas-grid">'
       +'<div class="persona-col"><div class="persona-name">👤 '+p1name+'</div>'
-        +'<div class="persona-row"><span class="pl">Gastó</span><span class="pv">'+clp(totalP1)+'</span></div>'
-        +'<div class="persona-row"><span class="pl">Pagó</span><span class="pv">'+clp(pagadoP1)+'</span></div>'
-        +'<div class="persona-row"><span class="pl">Corresponde</span><span class="pv">'+clp(totalP1)+'</span></div>'
-        +(dc?'<div class="persona-row" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border)"><span class="pl">'+periodoShort(_compPer)+'</span><span class="pv">'+clp(dc.totalP1||0)+'</span></div>':'')
+        +'<div class="persona-row"><span class="pl">Pagó de su bolsillo</span><span class="pv">'+clp(pagadoP1)+(dc&&dc.pagadoP1!=null?'<span class="liq-delta '+(pagadoP1>(dc.pagadoP1||0)?'up':'down')+'"> '+(pagadoP1>(dc.pagadoP1||0)?'▲':'▼')+clp(Math.abs(pagadoP1-(dc.pagadoP1||0)))+'</span>':'')+'</span></div>'
+        +'<div class="persona-row"><span class="pl">Le corresponde</span><span class="pv">'+clp(totalP1)+(dc&&dc.totalP1!=null?'<span class="liq-delta '+(totalP1>(dc.totalP1||0)?'up':'down')+'"> '+(totalP1>(dc.totalP1||0)?'▲':'▼')+clp(Math.abs(totalP1-(dc.totalP1||0)))+'</span>':'')+'</span></div>'
+        +'<div class="persona-row" style="font-weight:600;color:'+(pagadoP1>=totalP1?'var(--success)':'var(--danger)')+'"><span class="pl">Diferencia</span><span class="pv">'+(pagadoP1>=totalP1?'+':'')+clp(pagadoP1-totalP1)+'</span></div>'
       +'</div>'
       +'<div class="persona-col"><div class="persona-name">👤 '+p2name+'</div>'
-        +'<div class="persona-row"><span class="pl">Gastó</span><span class="pv">'+clp(totalP2)+'</span></div>'
-        +'<div class="persona-row"><span class="pl">Pagó</span><span class="pv">'+clp(pagadoP2)+'</span></div>'
-        +'<div class="persona-row"><span class="pl">Corresponde</span><span class="pv">'+clp(totalP2)+'</span></div>'
-        +(dc?'<div class="persona-row" style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border)"><span class="pl">'+periodoShort(_compPer)+'</span><span class="pv">'+clp(dc.totalP2||0)+'</span></div>':'')
+        +'<div class="persona-row"><span class="pl">Pagó de su bolsillo</span><span class="pv">'+clp(pagadoP2)+(dc&&dc.pagadoP2!=null?'<span class="liq-delta '+(pagadoP2>(dc.pagadoP2||0)?'up':'down')+'"> '+(pagadoP2>(dc.pagadoP2||0)?'▲':'▼')+clp(Math.abs(pagadoP2-(dc.pagadoP2||0)))+'</span>':'')+'</span></div>'
+        +'<div class="persona-row"><span class="pl">Le corresponde</span><span class="pv">'+clp(totalP2)+(dc&&dc.totalP2!=null?'<span class="liq-delta '+(totalP2>(dc.totalP2||0)?'up':'down')+'"> '+(totalP2>(dc.totalP2||0)?'▲':'▼')+clp(Math.abs(totalP2-(dc.totalP2||0)))+'</span>':'')+'</span></div>'
+        +'<div class="persona-row" style="font-weight:600;color:'+(pagadoP2>=totalP2?'var(--success)':'var(--danger)')+'"><span class="pl">Diferencia</span><span class="pv">'+(pagadoP2>=totalP2?'+':'')+clp(pagadoP2-totalP2)+'</span></div>'
       +'</div>'
     +'</div>'
     +(montoDeuda>0
@@ -407,6 +416,16 @@ function render(){
   html+='<div class="sec-head animate delay-2"><h3>💳 Liquidación</h3></div>'+deudaHtml;
   html+='<div class="sec-head animate delay-2"><h3>📦 Categorías</h3>'+(dc?'<span class="sec-badge">vs '+periodoShort(_compPer)+'</span>':'')+'</div>'+catsHtml;
   html+=chartHtml;
+  /* Gráfico histórico por categoría */
+  var allCats=catList.map(function(c){ return c.nombre; });
+  var histHtml='<div class="hist-card animate delay-3">'
+    +'<div class="hist-title">📊 Evolución por categoría'
+    +'<select class="hist-select" id="histCatSel" onchange="renderHistChart(this.value)">'
+    +allCats.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('')
+    +'</select></div>'
+    +'<div class="hist-canvas-wrap"><canvas id="histChart"></canvas></div>'
+    +'</div>';
+  html+='<div class="sec-head animate delay-3"><h3>📊 Evolución histórica</h3></div>'+histHtml;
   document.getElementById('page').innerHTML=html;
 
   /* Donut */
@@ -422,6 +441,29 @@ function render(){
   /* Line */
   var lCtx=document.getElementById('lineChart');
   if(lCtx) renderLineChart(lCtx,d);
+
+  /* Guardar datos de este período para el historial */
+  _histData[_periodo] = d.porCategoria||{};
+  if(_histPeriodos.indexOf(_periodo)<0) _histPeriodos.push(_periodo);
+
+  /* Cargar historial de todos los períodos en background */
+  var periodos=d.periodos||[];
+  periodos.forEach(function(p){
+    if(p===_periodo || _histData[p]) return;
+    fetch(API_URL+'?action=getDashboard&periodo='+p)
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res&&res.porCategoria){
+          _histData[p]=res.porCategoria;
+          if(_histPeriodos.indexOf(p)<0) _histPeriodos.push(p);
+        }
+      }).catch(function(){});
+  });
+
+  /* Hist chart */
+  var hCtx=document.getElementById('histChart');
+  var firstCat=document.getElementById('histCatSel');
+  if(hCtx&&firstCat) setTimeout(function(){ renderHistChart(firstCat.value); },400);
 }
 
 function renderLineChart(ctx,d){
@@ -508,6 +550,41 @@ var _now=new Date();
 _periodo=_now.getFullYear()+'-'+String(_now.getMonth()+1).padStart(2,'0');
 _compPer=prevPeriodo(_periodo);
 cargar();
+
+function renderHistChart(cat){
+  var hCtx=document.getElementById('histChart');
+  if(!hCtx) return;
+  if(_histChart){_histChart.destroy();_histChart=null;}
+  // Ordenar períodos cronológicamente
+  var pers=Object.keys(_histData).sort();
+  var labels=pers.map(function(p){ return periodoShort(p); });
+  var datos=pers.map(function(p){ return _histData[p][cat]||0; });
+  var isDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var gridColor=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.07)';
+  var textColor=isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)';
+  // Color de barra según si está sobre presupuesto
+  var pres=(_data&&_data.presupuesto&&_data.presupuesto[cat])||0;
+  var bgColors=datos.map(function(v,i){
+    var isActual=pers[i]===_periodo;
+    if(isActual) return v>pres&&pres>0?'rgba(239,68,68,.85)':'rgba(99,102,241,.85)';
+    return v>pres&&pres>0?'rgba(239,68,68,.45)':'rgba(99,102,241,.35)';
+  });
+  _histChart=new Chart(hCtx.getContext('2d'),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:cat,data:datos,backgroundColor:bgColors,borderRadius:6,borderSkipped:false},
+      pres>0?{label:'Presupuesto',data:pers.map(function(){ return pres; }),type:'line',borderColor:'#f97316',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}:null
+    ].filter(Boolean)},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){ return ' '+clp(c.raw); }}}},
+      scales:{
+        x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10}}},
+        y:{grid:{color:gridColor},ticks:{color:textColor,font:{size:10},callback:function(v){ return '$'+Math.round(v/1000)+'k'; }},beginAtZero:true}
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
